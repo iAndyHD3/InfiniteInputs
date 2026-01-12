@@ -6,9 +6,9 @@
 		"mac": "2.2074",
 		"ios": "2.2074"
 	},
-	"id": "iandyhd3.yet_more_editor_tools",
-	"name": "Yet More Editor Tools",
-	"version": "v1.0.0",
+	"id": "iandyhd3.infinite_inputs",
+	"name": "Infinite Inputs (Experimental)",
+	"version": "v0.0.1-alpha.1",
 	"developer": "iAndyHD3",
 	"description": "",
 	"dependencies":{
