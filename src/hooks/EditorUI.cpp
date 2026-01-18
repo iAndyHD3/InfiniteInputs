@@ -6,6 +6,7 @@
 #include <Geode/binding/EditorUI.hpp>
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/TextGameObject.hpp>
+#include <string_view>
 #include "../InputTriggerPopup.hpp"
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
@@ -102,6 +103,11 @@ void MyEditorUI::editObject(cocos2d::CCObject* sender) {
 
     int objectID = selectedObjects[0]->m_objectID;
     if (objectID != 914) return EditorUI::editObject(sender);
+
+    auto textObj = static_cast<TextGameObject*>(selectedObjects[0].data());
+    if (!std::string_view(textObj->m_text).starts_with("inf_inp:")) {
+        return EditorUI::editObject(sender);
+    }
 
     if (selectedObjects.size() > 1) {
         for (auto obj : selectedObjects) {
