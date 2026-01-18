@@ -8,7 +8,7 @@
 #include <Geode/binding/TextGameObject.hpp>
 #include "../InputTriggerPopup.hpp"
 
-constexpr int INPUT_TRIGGER_ID = -53246;
+constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
 
 using namespace geode::prelude;
 
@@ -17,8 +17,7 @@ void MyEditorUI::setupCreateMenu() {
 
     auto bar = CCArrayExt<EditButtonBar*>(m_createButtonBars)[12];
 
-    auto btn = menuItemFromObjectString("1,914,31,aW5mX2lucDplZGl0b3JUYWIgPSAw", INPUT_TRIGGER_ID);
-    btn->setTag(INPUT_TRIGGER_ID);
+    auto btn = getCreateBtn(INPUT_TRIGGER_ID, 1);
 
     m_createButtonArray->addObject(btn);
 
@@ -36,6 +35,29 @@ void MyEditorUI::setupCreateMenu() {
         GameManager::get()->getIntGameVariable("0049"),
         GameManager::get()->getIntGameVariable("0050")
     );
+}
+
+CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
+    if (id == INPUT_TRIGGER_ID) {
+        auto btn = getCreateBtn(1, 4);
+
+        auto arr = CCArray::create();
+        auto spr = spriteFromObjectString("1,914,31,aW5mX2lucDplZGl0b3JUYWIgPSAw", false, false, 0, arr, nullptr, nullptr);
+        
+        spr->setScale(std::min(32.f / spr->getContentHeight(), 32.f / spr->getContentWidth()));
+
+        auto buttonSpr = static_cast<ButtonSprite*>(btn->getNormalImage());
+        if (auto obj = buttonSpr->m_subSprite) {
+            obj->setVisible(false);
+        }
+        buttonSpr->addChild(spr);
+        spr->setPosition({20,21});
+
+        btn->m_objectID = INPUT_TRIGGER_ID;
+        btn->setTag(INPUT_TRIGGER_ID); 
+        return btn; 
+    }
+    return EditorUI::getCreateBtn(id, bg);
 }
 
 void MyEditorUI::onCreateObject(int objectID) {
