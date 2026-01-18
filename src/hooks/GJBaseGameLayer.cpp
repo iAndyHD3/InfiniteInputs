@@ -193,8 +193,19 @@ void MyBaseLayer::updateLoop(float) {
     }
 
     for(const auto& o : fields->cursorFollowObjects) {
-        auto layerObjPos = this->convertToNodeSpace(o->getRealPosition());
-        auto layerMousePos = screenToGame(getMousePos());
+        //LOGI(o->m_objectID, o->m_isUIObject, o->getRealPosition());
+
+        CCPoint layerObjPos;
+        CCPoint layerMousePos;
+
+        if(o->m_isUIObject) {
+            layerObjPos = o->getRealPosition();
+            layerMousePos = getMousePos();
+        } else {
+            layerObjPos = this->convertToNodeSpace(o->getRealPosition());
+            layerMousePos = screenToGame(getMousePos());
+        }
+
         auto delta = layerMousePos - layerObjPos;
         moveObject(o, delta.x, delta.y, false);
     }
