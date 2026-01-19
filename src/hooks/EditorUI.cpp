@@ -109,13 +109,23 @@ void MyEditorUI::editObject(cocos2d::CCObject* sender) {
         return EditorUI::editObject(sender);
     }
 
+    bool canEdit = true;
+
     if (selectedObjects.size() > 1) {
         for (auto obj : selectedObjects) {
             if (obj->m_objectID != objectID) {
                 return EditorUI::editObject(sender);
             }
+            if (obj->m_objectID == 914) {
+                auto textObj = static_cast<TextGameObject*>(selectedObjects[0].data());
+                if (!std::string_view(textObj->m_text).starts_with("inf_inp:")) {
+                    canEdit = false;
+                }
+            }
         }
     }
 
-    InputTriggerPopup::create(selectedObjects)->show();
+    if (canEdit) {
+        InputTriggerPopup::create(selectedObjects)->show();
+    }
 }
