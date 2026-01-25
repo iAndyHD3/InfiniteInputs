@@ -1,9 +1,11 @@
 
+#include "Geode/loader/Event.hpp"
 #include <Geode/Geode.hpp>
 
 #if defined(GEODE_IS_WINDOWS)
 #include "LevelKeys.hpp"
 #include <Geode/modify/CCEGLView.hpp>
+#include <Geode/utils/Keyboard.hpp>
 
 
 extern void CROSSPLATFORM_ON_KEY_CALLBACK(LevelKeys key, bool down);
@@ -16,21 +18,14 @@ extern void CROSSPLATFORM_ON_KEY_CALLBACK(LevelKeys key, bool down);
 //It swallows jump touches for no reason AND it sends the wrong keys for everything else.
 //So no, I won't be using UILayer hooks even tho I really wanted to, that said I hope custom keybinds gets deleted one day :)
 
-class $modify(cocos2d::CCEGLView)
-{
-    //action == 0, up
-    //action == 1, down
-    //action == 2, hold
-    void onGLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-	{
-        CCEGLView::onGLFWKeyCallback(window, key, scancode, action, mods);
-        if(action >= 2) return;
-        geode::log::debug("key: {}, scancode: {}, action; {}, mods: {}", key, scancode, action, mods);
+$execute {
+    
+    new geode::EventListener<geode::EventFilter<geode::KeyboardInputEvent>>(+[](geode::KeyboardInputEvent* event){
+        if(event->action == geode::KeyboardInputEvent::Action::Repeat) return geode::ListenerResult::Propagate;
+        CROSSPLATFORM_ON_KEY_CALLBACK(CocosKeyCodeToLevelKey(event->key), event->action == geode::KeyboardInputEvent::Action::Press ? true : false);
+        return geode::ListenerResult::Propagate;
+    });
 
-        CROSSPLATFORM_ON_KEY_CALLBACK(glfwKeyToLevelKey(key), action == 1);
-
-	}
-};
-
+}
 
 #endif

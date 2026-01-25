@@ -1,12 +1,15 @@
 #pragma once
 #include "../LevelKeys.hpp"
 #include <Geode/binding/LevelEditorLayer.hpp>
-#include <alphalaneous.alphas-ui-pack/include/touch/Touch.hpp>
 #include "Geode/utils/cocos.hpp"
-#include "alphalaneous.alphas-ui-pack/include/touch/TouchDispatcher.hpp"
 #include <Geode/modify/GJBaseGameLayer.hpp>
-#include <alphalaneous.alphas-ui-pack/include/nodes/scroll/AdvancedScrollDelegate.hpp>
-#include <alphalaneous.alphas-ui-pack/include/nodes/scroll/ScrollDispatcher.hpp>
+
+//#include <alphalaneous.alphas-ui-pack/include/touch/Touch.hpp>
+//#include "alphalaneous.alphas-ui-pack/include/touch/TouchDispatcher.hpp"
+// #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/AdvancedScrollDelegate.hpp>
+// #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/ScrollDispatcher.hpp>
+
+
 #include <unordered_map>
 #include <vector>
 #include <string_view>
@@ -16,22 +19,22 @@ using namespace geode::prelude;
 
 using groupId = int;
 
-struct MyClickDelegate : public CCNode, alpha::dispatcher::TouchDelegate {
-    bool clickBegan(alpha::dispatcher::TouchEvent* touch) override;
-	void clickEnded(alpha::dispatcher::TouchEvent* touch) override;
-};
+// struct MyClickDelegate : public CCNode, alpha::dispatcher::TouchDelegate {
+//     bool clickBegan(alpha::dispatcher::TouchEvent* touch) override;
+// 	void clickEnded(alpha::dispatcher::TouchEvent* touch) override;
+// };
 
-struct MyScrollDelegate : public CCNode, alpha::dispatcher::AdvancedScrollDelegate {
-    void scroll(float x, float y) override;
-};
+// struct MyScrollDelegate : public CCNode, alpha::dispatcher::AdvancedScrollDelegate {
+//     void scroll(float x, float y) override;
+// };
 
 class $modify(MyBaseLayer, GJBaseGameLayer)
 {
     struct Fields {
         std::unordered_map<LevelKeys, groupId> upKeyMap;
         std::unordered_map<LevelKeys, groupId> downKeyMap;
-        MyClickDelegate* touchDelegate = nullptr;
-        MyScrollDelegate* scrollDelegate = nullptr;
+        //MyClickDelegate* touchDelegate = nullptr;
+        //MyScrollDelegate* scrollDelegate = nullptr;
         bool controlPressed = false;
         bool altPressed = false;
         bool shiftPressed = false;
@@ -76,7 +79,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
 
     void editorActiveHandlerLoop(float);
 
-    void handleClick(alpha::dispatcher::TouchEvent* touch, bool down);
+    //void handleClick(alpha::dispatcher::TouchEvent* touch, bool down);
 
     void updateLoop(float);
 

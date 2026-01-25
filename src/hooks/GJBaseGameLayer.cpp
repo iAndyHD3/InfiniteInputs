@@ -33,14 +33,14 @@ static bool hasGroup(GameObject* obj, int group)
 void MyBaseLayer::Fields::clear() {
     upKeyMap.clear();
     downKeyMap.clear();
-    if(touchDelegate) {
-        CCTouchDispatcher::get()->removeDelegate(touchDelegate);
-        touchDelegate = nullptr;
-    }
-    if(scrollDelegate) {
-        alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
-        scrollDelegate = nullptr;
-    }
+    // if(touchDelegate) {
+    //     CCTouchDispatcher::get()->removeDelegate(touchDelegate);
+    //     touchDelegate = nullptr;
+    // }
+    // if(scrollDelegate) {
+    //     alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
+    //     scrollDelegate = nullptr;
+    // }
     controlPressed = false;
     altPressed = false;
     shiftPressed = false;
@@ -100,12 +100,12 @@ void MyBaseLayer::Fields::spawnGroupIfDefined(LevelKeys k, bool down) {
 }
 
 MyBaseLayer::Fields::~Fields() {
-    if(touchDelegate) {
-        CCTouchDispatcher::get()->removeDelegate(touchDelegate);
-    }
-    if(scrollDelegate) {
-        alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
-    }
+    // if(touchDelegate) {
+    //     CCTouchDispatcher::get()->removeDelegate(touchDelegate);
+    // }
+    // if(scrollDelegate) {
+    //     alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
+    // }
 }
 
 $override
@@ -167,11 +167,11 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     }
 }
 
-void MyBaseLayer::handleClick(alpha::dispatcher::TouchEvent* touch, bool down) {
-    LevelKeys btn = AlphaMouseButtonToLevelKeys(touch->getButton());
-    log::info("{} {}", enchantum::to_string(touch->getButton()), enchantum::to_string(btn));
-    nh_handleKeypress(btn, down);
-}
+// void MyBaseLayer::handleClick(alpha::dispatcher::TouchEvent* touch, bool down) {
+//     LevelKeys btn = AlphaMouseButtonToLevelKeys(touch->getButton());
+//     log::info("{} {}", enchantum::to_string(touch->getButton()), enchantum::to_string(btn));
+//     nh_handleKeypress(btn, down);
+// }
 
 void MyBaseLayer::updateLoop(float) {
     auto kb = CCDirector::get()->getKeyboardDispatcher();
@@ -281,23 +281,23 @@ void MyBaseLayer::setupKeybinds_step0(float) {
     auto fields = m_fields.self();
     fields->layer = this;
 
-    if(!fields->touchDelegate) {
-        fields->touchDelegate = new MyClickDelegate;
-        fields->touchDelegate->autorelease();
-        fields->touchDelegate->setID("iandyhd.keyboardsupport/touch-delegate");
-        fields->touchDelegate->setContentSize(this->getContentSize());
-        addChild(fields->touchDelegate, INT_MAX);
-        CCTouchDispatcher::get()->addTargetedDelegate(fields->touchDelegate, INT_MIN, false);
-    }
+    // if(!fields->touchDelegate) {
+    //     fields->touchDelegate = new MyClickDelegate;
+    //     fields->touchDelegate->autorelease();
+    //     fields->touchDelegate->setID("iandyhd.keyboardsupport/touch-delegate");
+    //     fields->touchDelegate->setContentSize(this->getContentSize());
+    //     addChild(fields->touchDelegate, INT_MAX);
+    //     CCTouchDispatcher::get()->addTargetedDelegate(fields->touchDelegate, INT_MIN, false);
+    // }
 
-    if(!fields->scrollDelegate) {
-        fields->scrollDelegate = new MyScrollDelegate;
-        fields->scrollDelegate->autorelease();
-        fields->scrollDelegate->setID("iandyhd.keyboardsupport/scroll-delegate");
-        fields->scrollDelegate->setContentSize(this->getContentSize());
-        addChild(fields->scrollDelegate, INT_MAX);
-        alpha::dispatcher::ScrollDispatcher::get()->registerScroll(fields->scrollDelegate);
-    }
+    // if(!fields->scrollDelegate) {
+    //     fields->scrollDelegate = new MyScrollDelegate;
+    //     fields->scrollDelegate->autorelease();
+    //     fields->scrollDelegate->setID("iandyhd.keyboardsupport/scroll-delegate");
+    //     fields->scrollDelegate->setContentSize(this->getContentSize());
+    //     addChild(fields->scrollDelegate, INT_MAX);
+    //     alpha::dispatcher::ScrollDispatcher::get()->registerScroll(fields->scrollDelegate);
+    // }
     if(fields->cursorFollowGroupId != -1) {
         setupCursorGroup(fields->cursorFollowGroupId);
     }
@@ -319,25 +319,25 @@ void MyBaseLayer::nh_handleKeypress(LevelKeys key, bool down) {
     m_fields->spawnGroupIfDefined(key, down);
 }
 
-bool MyClickDelegate::clickBegan(alpha::dispatcher::TouchEvent *touch) {
-    auto bl = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get());
-    if(!bl->isModActive()) return false;
-    log::debug("click began {}", enchantum::to_string(touch->getButton()));
-    bl->handleClick(touch, true);
-    return true;
-}
+// bool MyClickDelegate::clickBegan(alpha::dispatcher::TouchEvent *touch) {
+//     auto bl = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get());
+//     if(!bl->isModActive()) return false;
+//     log::debug("click began {}", enchantum::to_string(touch->getButton()));
+//     bl->handleClick(touch, true);
+//     return true;
+// }
 
-void MyClickDelegate::clickEnded(alpha::dispatcher::TouchEvent* touch) {
-    log::debug("click ended {}", enchantum::to_string(touch->getButton()));
-    reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get())->handleClick(touch, false);
-}
+// void MyClickDelegate::clickEnded(alpha::dispatcher::TouchEvent* touch) {
+//     log::debug("click ended {}", enchantum::to_string(touch->getButton()));
+//     reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get())->handleClick(touch, false);
+// }
 
-void MyScrollDelegate::scroll(float x, float y) {
-    auto bl = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get());
-    if(!bl->isModActive()) return;
-    log::info("scroll {}, {}", x, y);
-    bl->handleScroll(x, y);
-}
+// void MyScrollDelegate::scroll(float x, float y) {
+//     auto bl = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get());
+//     if(!bl->isModActive()) return;
+//     log::info("scroll {}, {}", x, y);
+//     bl->handleScroll(x, y);
+// }
 
 cocos2d::CCPoint MyBaseLayer::screenToGame(const cocos2d::CCPoint& screenPos) {
     auto cameraPos = m_gameState.m_cameraPosition;

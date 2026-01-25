@@ -8,7 +8,7 @@ using namespace geode::prelude;
 
 InputTriggerPopup* InputTriggerPopup::create(std::vector<geode::Ref<GameObject>> objects) {
     auto ret = new InputTriggerPopup();
-    if (ret->initAnchored(440.f, 310.f, objects)) {
+    if (ret && ret->init(objects)) {
         ret->autorelease();
         return ret;
     }
@@ -16,7 +16,12 @@ InputTriggerPopup* InputTriggerPopup::create(std::vector<geode::Ref<GameObject>>
     return nullptr;
 }
 
-bool InputTriggerPopup::setup(std::vector<geode::Ref<GameObject>> objects) {
+
+bool InputTriggerPopup::init(std::vector<geode::Ref<GameObject>> objects) {
+
+    if(!Popup::init(440.f, 310.f)) {
+        return false;
+    }
     m_noElasticity = true;
     m_objects = objects;
     m_closeBtn->removeFromParent();
@@ -577,7 +582,6 @@ void InputTriggerPopup::checkSpecialKey() {
 }
 
 void InputTriggerPopup::onClose(CCObject* sender) {
-    geode::Popup<std::vector<geode::Ref<GameObject>>>::onClose(sender);
 
     for (const auto& obj : m_objects) {
         auto textObj = static_cast<TextGameObject*>(obj.data());

@@ -11,11 +11,11 @@
 #include "LevelKeys.hpp"
 #include "TextParsing.hpp"
 
-class InputTriggerPopup : public geode::Popup<std::vector<geode::Ref<GameObject>>> {
+class InputTriggerPopup : public geode::Popup {
 public:
     static InputTriggerPopup* create(std::vector<geode::Ref<GameObject>> objects);
 protected:
-    bool setup(std::vector<geode::Ref<GameObject>> objects) override;
+    bool init(std::vector<geode::Ref<GameObject>> objects);
     void onClose(CCObject* sender) override;
     void setupValues();
 
