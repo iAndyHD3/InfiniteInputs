@@ -219,3 +219,15 @@ LevelKeys CocosKeyCodeToLevelKey(enumKeyCodes code) {
         default:             return LevelKeys::unknown;
     }
 }
+
+LevelKeys GeodeMouseToLevelKeys(geode::MouseInputEvent::Button button)
+{
+    switch (button) {
+    case geode::MouseInputEvent::Button::Left: return LevelKeys::leftMouse;
+    case geode::MouseInputEvent::Button::Right: return LevelKeys::rightMouse;
+    case geode::MouseInputEvent::Button::Middle: return LevelKeys::middleMouse;
+    case geode::MouseInputEvent::Button::Button4: return LevelKeys::mouse3;
+    case geode::MouseInputEvent::Button::Button5: return LevelKeys::mouse4;
+      break;
+    }
+}

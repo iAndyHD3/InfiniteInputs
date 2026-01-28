@@ -1,5 +1,6 @@
 #pragma once
 #include <cocos2d.h>
+#include <Geode/utils/Keyboard.hpp>
 //#include <alphalaneous.alphas-ui-pack/include/touch/Touch.hpp>
 using namespace cocos2d;
 
@@ -44,4 +45,4 @@ std::string_view fixKeyName(std::string_view name);
 enumKeyCodes LevelKeyToCocosKeyCode(LevelKeys key);
 //LevelKeys AlphaMouseButtonToLevelKeys(alpha::dispatcher::MouseButton button);
 LevelKeys keyLevelIdentifierToValue(std::string_view levelkeyname);
-
+LevelKeys GeodeMouseToLevelKeys(geode::MouseInputEvent::Button button);

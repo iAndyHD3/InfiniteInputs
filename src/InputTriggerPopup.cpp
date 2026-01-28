@@ -1,4 +1,5 @@
 #include "InputTriggerPopup.hpp"
+#include "Geode/ui/Popup.hpp"
 #include <Geode/Geode.hpp>
 #include <algorithm>
 #include <enchantum/enchantum.hpp>
@@ -606,4 +607,5 @@ void InputTriggerPopup::onClose(CCObject* sender) {
             textObj->updateTextObject(label, false);
         }
     }
+    Popup::onClose(sender);
 }

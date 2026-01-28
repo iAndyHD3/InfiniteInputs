@@ -41,11 +41,10 @@ void MyBaseLayer::Fields::clear() {
     //     alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
     //     scrollDelegate = nullptr;
     // }
-    controlPressed = false;
-    altPressed = false;
-    shiftPressed = false;
+
     active = false;
     layer = nullptr;
+    
     //no clear() in Ext
     cursorFollowObjects.inner()->removeAllObjects();
     cursorFollowGroupId = -1;
@@ -100,12 +99,7 @@ void MyBaseLayer::Fields::spawnGroupIfDefined(LevelKeys k, bool down) {
 }
 
 MyBaseLayer::Fields::~Fields() {
-    // if(touchDelegate) {
-    //     CCTouchDispatcher::get()->removeDelegate(touchDelegate);
-    // }
-    // if(scrollDelegate) {
-    //     alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
-    // }
+
 }
 
 $override
@@ -174,23 +168,23 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
 // }
 
 void MyBaseLayer::updateLoop(float) {
-    auto kb = CCDirector::get()->getKeyboardDispatcher();
+//     auto kb = CCDirector::get()->getKeyboardDispatcher();
     auto fields = m_fields.self();
-    bool control = kb->getControlKeyPressed();
-    if(control != fields->controlPressed) {
-        fields->controlPressed = control;
-        nh_handleKeypress(LevelKeys::leftCtrl, control);
-    }
-    bool shift = kb->getShiftKeyPressed();
-    if(shift != fields->shiftPressed) {
-        fields->shiftPressed = shift;
-        nh_handleKeypress(LevelKeys::leftShift, shift);
-    }
-    bool alt = kb->getAltKeyPressed();
-    if(alt != fields->altPressed) {
-        fields->altPressed = alt;
-        nh_handleKeypress(LevelKeys::leftAlt, alt);
-    }
+//     bool control = kb->getControlKeyPressed();
+//     if(control != fields->controlPressed) {
+//         fields->controlPressed = control;
+//         nh_handleKeypress(LevelKeys::leftCtrl, control);
+//     }
+//     bool shift = kb->getShiftKeyPressed();
+//     if(shift != fields->shiftPressed) {
+//         fields->shiftPressed = shift;
+//         nh_handleKeypress(LevelKeys::leftShift, shift);
+//     }
+//     bool alt = kb->getAltKeyPressed();
+//     if(alt != fields->altPressed) {
+//         fields->altPressed = alt;
+//         nh_handleKeypress(LevelKeys::leftAlt, alt);
+//     }
 
     for(const auto& o : fields->cursorFollowObjects) {
         //LOGI(o->m_objectID, o->m_isUIObject, o->getRealPosition());
@@ -298,6 +292,7 @@ void MyBaseLayer::setupKeybinds_step0(float) {
     //     addChild(fields->scrollDelegate, INT_MAX);
     //     alpha::dispatcher::ScrollDispatcher::get()->registerScroll(fields->scrollDelegate);
     // }
+
     if(fields->cursorFollowGroupId != -1) {
         setupCursorGroup(fields->cursorFollowGroupId);
     }

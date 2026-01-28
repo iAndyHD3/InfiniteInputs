@@ -35,11 +35,9 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
         std::unordered_map<LevelKeys, groupId> downKeyMap;
         //MyClickDelegate* touchDelegate = nullptr;
         //MyScrollDelegate* scrollDelegate = nullptr;
-        bool controlPressed = false;
-        bool altPressed = false;
-        bool shiftPressed = false;
-        bool active = false;
+
         bool spawnedModLoaded = false;
+        bool active = false;
         bool addedAtleastOneKey = false;
         GJBaseGameLayer* layer = nullptr;
         int i = 0;
