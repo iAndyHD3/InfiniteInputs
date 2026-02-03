@@ -3,74 +3,6 @@
 #include "Geode/cocos/robtop/keyboard_dispatcher/CCKeyboardDelegate.h"
 #include <enchantum/enchantum.hpp>
 
-LevelKeys glfwKeyToLevelKey(int glfwKey) {
-    switch (glfwKey) {
-        // Function keys
-        case GLFW_KEY_F1:  return LevelKeys::f1;
-        case GLFW_KEY_F2:  return LevelKeys::f2;
-        case GLFW_KEY_F3:  return LevelKeys::f3;
-        case GLFW_KEY_F4:  return LevelKeys::f4;
-        case GLFW_KEY_F5:  return LevelKeys::f5;
-        case GLFW_KEY_F6:  return LevelKeys::f6;
-        case GLFW_KEY_F7:  return LevelKeys::f7;
-        case GLFW_KEY_F8:  return LevelKeys::f8;
-        case GLFW_KEY_F9:  return LevelKeys::f9;
-        case GLFW_KEY_F10: return LevelKeys::f10;
-        case GLFW_KEY_F11: return LevelKeys::f11;
-        case GLFW_KEY_F12: return LevelKeys::f12;
-
-        // Number keys
-        case GLFW_KEY_1: return LevelKeys::KEY_1;
-        case GLFW_KEY_2: return LevelKeys::KEY_2;
-        case GLFW_KEY_3: return LevelKeys::KEY_3;
-        case GLFW_KEY_4: return LevelKeys::KEY_4;
-        case GLFW_KEY_5: return LevelKeys::KEY_5;
-        case GLFW_KEY_6: return LevelKeys::KEY_6;
-        case GLFW_KEY_7: return LevelKeys::KEY_7;
-        case GLFW_KEY_8: return LevelKeys::KEY_8;
-        case GLFW_KEY_9: return LevelKeys::KEY_9;
-        case GLFW_KEY_0: return LevelKeys::KEY_0;
-
-        // Letter keys
-        case GLFW_KEY_Q: return LevelKeys::q;
-        case GLFW_KEY_W: return LevelKeys::w;
-        case GLFW_KEY_E: return LevelKeys::e;
-        case GLFW_KEY_R: return LevelKeys::r;
-        case GLFW_KEY_T: return LevelKeys::t;
-        case GLFW_KEY_Z: return LevelKeys::z;
-        case GLFW_KEY_U: return LevelKeys::u;
-        case GLFW_KEY_I: return LevelKeys::i;
-        case GLFW_KEY_O: return LevelKeys::o;
-        case GLFW_KEY_P: return LevelKeys::p;
-
-        case GLFW_KEY_A: return LevelKeys::a;
-        case GLFW_KEY_S: return LevelKeys::s;
-        case GLFW_KEY_D: return LevelKeys::d;
-        case GLFW_KEY_F: return LevelKeys::f;
-        case GLFW_KEY_G: return LevelKeys::g;
-        case GLFW_KEY_H: return LevelKeys::h;
-        case GLFW_KEY_J: return LevelKeys::j;
-        case GLFW_KEY_K: return LevelKeys::k;
-        case GLFW_KEY_L: return LevelKeys::l;
-
-        case GLFW_KEY_Y: return LevelKeys::y;
-        case GLFW_KEY_X: return LevelKeys::x;
-        case GLFW_KEY_C: return LevelKeys::c;
-        case GLFW_KEY_V: return LevelKeys::v;
-        case GLFW_KEY_B: return LevelKeys::b;
-        case GLFW_KEY_N: return LevelKeys::n;
-        case GLFW_KEY_M: return LevelKeys::m;
-
-        // Special keys
-        case GLFW_KEY_ENTER:        return LevelKeys::enter;
-        case GLFW_KEY_SPACE:        return LevelKeys::space;
-        case GLFW_KEY_LEFT_CONTROL: return LevelKeys::leftCtrl;
-        case GLFW_KEY_LEFT_SHIFT:   return LevelKeys::leftShift;
-        case GLFW_KEY_LEFT_ALT:     return LevelKeys::leftAlt;
-
-        default: return LevelKeys::unknown;
-    }
-}
 
 std::string_view fixKeyName(std::string_view name) {
     if (name.starts_with("KEY_")) [[unlikely]] {
@@ -136,19 +68,6 @@ enumKeyCodes LevelKeyToCocosKeyCode(LevelKeys key) {
         default: return KEY_Unknown;
     }
 }
-
-// LevelKeys AlphaMouseButtonToLevelKeys(alpha::dispatcher::MouseButton button) {
-//     switch(button) {
-
-//     case alpha::dispatcher::MouseButton::LEFT: return LevelKeys::leftMouse;
-//     case alpha::dispatcher::MouseButton::MIDDLE: return LevelKeys::middleMouse;
-//     case alpha::dispatcher::MouseButton::RIGHT: return LevelKeys::rightMouse;
-//     case alpha::dispatcher::MouseButton::BUTTON3: return LevelKeys::mouse3;
-//     case alpha::dispatcher::MouseButton::BUTTON4: return LevelKeys::mouse4;
-//     case alpha::dispatcher::MouseButton::HOVER: return LevelKeys::unknown;
-//     default: return LevelKeys::unknown;
-//     }
-// }
 
 LevelKeys keyLevelIdentifierToValue(std::string_view levelkeyname) {
     for(const auto& [keyVal, originalKeyName] : enchantum::entries_generator<LevelKeys>) {
@@ -220,14 +139,14 @@ LevelKeys CocosKeyCodeToLevelKey(enumKeyCodes code) {
     }
 }
 
-LevelKeys GeodeMouseToLevelKeys(geode::MouseInputEvent::Button button)
+LevelKeys GeodeMouseToLevelKeys(geode::MouseInputData::Button button)
 {
     switch (button) {
-    case geode::MouseInputEvent::Button::Left: return LevelKeys::leftMouse;
-    case geode::MouseInputEvent::Button::Right: return LevelKeys::rightMouse;
-    case geode::MouseInputEvent::Button::Middle: return LevelKeys::middleMouse;
-    case geode::MouseInputEvent::Button::Button4: return LevelKeys::mouse3;
-    case geode::MouseInputEvent::Button::Button5: return LevelKeys::mouse4;
+    case geode::MouseInputData::Button::Left: return LevelKeys::leftMouse;
+    case geode::MouseInputData::Button::Right: return LevelKeys::rightMouse;
+    case geode::MouseInputData::Button::Middle: return LevelKeys::middleMouse;
+    case geode::MouseInputData::Button::Button4: return LevelKeys::mouse3;
+    case geode::MouseInputData::Button::Button5: return LevelKeys::mouse4;
       break;
     }
 }

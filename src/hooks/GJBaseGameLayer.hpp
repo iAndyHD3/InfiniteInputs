@@ -1,5 +1,6 @@
 #pragma once
 #include "../LevelKeys.hpp"
+#include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
 #include "Geode/utils/cocos.hpp"
 #include <Geode/modify/GJBaseGameLayer.hpp>
@@ -14,6 +15,7 @@
 #include <vector>
 #include <string_view>
 #include <Geode/modify/GJBaseGameLayer.hpp>
+#include "../TextParsing.hpp"
 
 using namespace geode::prelude;
 
@@ -28,22 +30,42 @@ using groupId = int;
 //     void scroll(float x, float y) override;
 // };
 
+
 class $modify(MyBaseLayer, GJBaseGameLayer)
 {
     struct Fields {
-        std::unordered_map<LevelKeys, groupId> upKeyMap;
-        std::unordered_map<LevelKeys, groupId> downKeyMap;
-        //MyClickDelegate* touchDelegate = nullptr;
-        //MyScrollDelegate* scrollDelegate = nullptr;
+
+        struct KeyActionMapKey {
+            LevelKeys key;
+            bool keyDown;
+
+            bool operator==(const KeyActionMapKey& other) const {
+                return key == other.key && keyDown == other.keyDown;
+            }
+        };
+        
+        struct KeyActionMapKeyHash {
+            std::size_t operator()(const KeyActionMapKey& k) const {
+                return std::hash<LevelKeys>()(k.key) ^ std::hash<bool>()(k.keyDown);
+            }
+        };
+
+        std::unordered_map<KeyActionMapKey, groupId, KeyActionMapKeyHash> keyMap;
+
+        //SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow
+        std::unordered_map<LevelKeys, groupId> simpleKeyMap;
+
+        std::vector<std::pair<GameObject*, ClickAction>> clickActionObjects;
+
+        //only used as queue during initialization
+        std::vector<ClickAction> clickActionAddQueue;
 
         bool spawnedModLoaded = false;
         bool active = false;
         bool addedAtleastOneKey = false;
         GJBaseGameLayer* layer = nullptr;
-        int i = 0;
 
-        //needs to be ccarray because moveObjects takes CCArray* and converting from vector to ccarray would be stupid
-        CCArrayExt<GameObject*> cursorFollowObjects;
+        std::vector<GameObject*> cursorFollowObjects;
 
         /*SPECIAL ONLY ONE GROUP ID!!!*/
         int cursorFollowGroupId = -1;
@@ -51,14 +73,16 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
         int wheelDownGroup = -1;
         
         void clear();
-        auto& getKeysMap(bool down);
 
         void addKeyBind(LevelKeys key, bool down, int groupId);
+        void addClickAction(EffectGameObject* collision, ClickAction action);
 
-        std::optional<groupId> getGroupId(LevelKeys k, bool down);
+        //TODO: unify this with overloads or something
+        std::optional<groupId> getGroupId(const KeyActionMapKey&);
 
 
-        void spawnGroupIfDefined(LevelKeys k, bool down);
+        void spawnGroupKeys(const KeyActionMapKey&);
+        void spawnGroupSimple(LevelKeys key);
 
         ~Fields();
     };
@@ -88,11 +112,13 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
 
     void setupText(std::string_view t);
 
+    //TODO: unify all of this
     void setupCursorGroup(int cursorGroupId);
 
-    //true if correctly registered atleast one keybind
+    //true if correctly registered (TODO: or will register) atleast one keybind
     bool setupTextLabelKeys_step1();
 
+    //TODO: check this
     bool isModActive();
 
     void setupKeybinds_step0(float);

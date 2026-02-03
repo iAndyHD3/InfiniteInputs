@@ -40,9 +40,8 @@ struct LevelKeyBinding
 
 // Function declarations
 LevelKeys CocosKeyCodeToLevelKey(enumKeyCodes code);
-LevelKeys glfwKeyToLevelKey(int glfwKey);
 std::string_view fixKeyName(std::string_view name);
 enumKeyCodes LevelKeyToCocosKeyCode(LevelKeys key);
 //LevelKeys AlphaMouseButtonToLevelKeys(alpha::dispatcher::MouseButton button);
 LevelKeys keyLevelIdentifierToValue(std::string_view levelkeyname);
-LevelKeys GeodeMouseToLevelKeys(geode::MouseInputEvent::Button button);
+LevelKeys GeodeMouseToLevelKeys(geode::MouseInputData::Button button);

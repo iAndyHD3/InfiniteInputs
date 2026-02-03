@@ -1,4 +1,5 @@
 #include "EditorUI.hpp"
+#include "Geode/loader/Mod.hpp"
 #include "Geode/utils/cocos.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/binding/CreateMenuItem.hpp>
@@ -14,6 +15,10 @@ using namespace geode::prelude;
 
 void MyEditorUI::setupCreateMenu() {
     EditorUI::setupCreateMenu();
+
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return;
+    }
 
     auto bar = CCArrayExt<EditButtonBar*>(m_createButtonBars)[12];
 
@@ -38,6 +43,10 @@ void MyEditorUI::setupCreateMenu() {
 }
 
 CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return EditorUI::getCreateBtn(id, bg);
+    }
+
     if (id == INPUT_TRIGGER_ID) {
         auto btn = getCreateBtn(1, 4);
 
@@ -61,6 +70,10 @@ CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
 }
 
 void MyEditorUI::onCreateObject(int objectID) {
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return EditorUI::onCreateObject(objectID);
+    }
+
     if (objectID != INPUT_TRIGGER_ID) return EditorUI::onCreateObject(objectID);
     objectID = 914;
     
@@ -73,6 +86,10 @@ void MyEditorUI::onCreateObject(int objectID) {
 }
 
 void MyEditorUI::clickOnPosition(cocos2d::CCPoint position) {
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return EditorUI::clickOnPosition(position);
+    }
+
     EditorUI::clickOnPosition(position);
     if (m_selectedObjectIndex != 914) return;
     if (m_selectedMode != 2) return;
@@ -91,6 +108,10 @@ void MyEditorUI::clickOnPosition(cocos2d::CCPoint position) {
 }
 
 void MyEditorUI::editObject(cocos2d::CCObject* sender) {
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return EditorUI::editObject(sender);
+    }
+    
     std::vector<Ref<GameObject>> selectedObjects;
     if (m_selectedObject) selectedObjects.push_back(m_selectedObject);
     if (m_selectedObjects) {

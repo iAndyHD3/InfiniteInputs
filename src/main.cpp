@@ -1,11 +1,44 @@
 #include "hooks/GJBaseGameLayer.hpp"
+#include "Geode/loader/Event.hpp"
+#include "LevelKeys.hpp"
+#include <Geode/modify/CCEGLView.hpp>
+#include <Geode/utils/Keyboard.hpp>
+#include <enchantum/enchantum.hpp>
+
 
 using namespace geode::prelude;
 
-//called from windows.cpp or macos.mm (mac version is NOT currently being released, can be built locally)
-void CROSSPLATFORM_ON_KEY_CALLBACK(LevelKeys key, bool down)
+
+using namespace geode::prelude;
+
+void onKeyInput(LevelKeys key, bool down)
 {
     if(auto layer = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get()); layer && layer->isModActive()) {
         layer->nh_handleKeypress(key, down);
     }
 }
+
+void onScrollInput(float x, float y) {
+    if(auto layer = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get()); layer && layer->isModActive()) {
+        layer->handleScroll(x, y);
+    }
+}
+
+$execute {
+
+    KeyboardInputEvent().listen(+[](const geode::KeyboardInputData& event){
+        if(event.action == KeyboardInputData::Action::Repeat) return geode::ListenerResult::Propagate;        
+        onKeyInput(CocosKeyCodeToLevelKey(event.key), event.action == KeyboardInputData::Action::Press);
+        return ListenerResult::Propagate;
+    }).leak();
+
+    MouseInputEvent().listen(+[](const geode::MouseInputData& event){
+        onKeyInput(GeodeMouseToLevelKeys(event.button), event.action == MouseInputData::Action::Press);
+        return ListenerResult::Propagate;
+    }).leak();
+
+    ScrollWheelEvent().listen(+[](double x, double y){
+        onScrollInput(x, y);
+        return ListenerResult::Propagate;
+    }).leak();
+};

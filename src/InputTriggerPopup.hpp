@@ -33,7 +33,8 @@ protected:
     bool m_modifiedKey = false;
     bool m_modifiedRelease = false;
 
-    ParsedTextLabel m_label;
+    //TODO: change this to the typedef
+    KeyAction m_label;
 
     geode::TextInput* m_groupInput;
     CCMenuItemToggler* m_onModLoadedToggle;

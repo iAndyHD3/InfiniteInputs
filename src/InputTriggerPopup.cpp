@@ -209,7 +209,7 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
 
 void InputTriggerPopup::setupValues() {
 
-    auto parsed_opt = getTupleFromLabel(static_cast<TextGameObject*>(m_objects[0].data())->m_text);
+    auto parsed_opt = getParsedKeyAction(static_cast<TextGameObject*>(m_objects[0].data())->m_text);
 
     if (parsed_opt) {
         auto parsed = *parsed_opt;
@@ -218,7 +218,7 @@ void InputTriggerPopup::setupValues() {
         bool mixedKey = false;
         bool mixedKeyDown = false;
         for (const auto& obj : m_objects) {
-            auto parsedObj_opt = getTupleFromLabel(static_cast<TextGameObject*>(obj.data())->m_text);
+            auto parsedObj_opt = getParsedKeyAction(static_cast<TextGameObject*>(obj.data())->m_text);
             auto parsedObj = *parsedObj_opt;
 
             if (parsed.group != parsedObj.group) {
@@ -587,7 +587,7 @@ void InputTriggerPopup::onClose(CCObject* sender) {
     for (const auto& obj : m_objects) {
         auto textObj = static_cast<TextGameObject*>(obj.data());
         auto text = textObj->m_text;
-        auto parsed_opt = getTupleFromLabel(text);
+        auto parsed_opt = getParsedKeyAction(text);
         if (parsed_opt) {
             auto parsed = *parsed_opt;
             if (m_modifiedGroup) {
@@ -599,11 +599,11 @@ void InputTriggerPopup::onClose(CCObject* sender) {
             if (m_modifiedRelease) {
                 parsed.keyDown = m_label.keyDown;
             }
-            auto label = getLabelFromTuple(parsed);
+            auto label = getLabelFromKeyAction(parsed);
             textObj->updateTextObject(label, false);
         }
         else {
-            auto label = getLabelFromTuple(m_label);
+            auto label = getLabelFromKeyAction(m_label);
             textObj->updateTextObject(label, false);
         }
     }

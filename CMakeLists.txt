@@ -39,3 +39,10 @@ CPMAddPackage("gh:eliaskosunen/scnlib#4b8a740")
 
 CPMAddPackage("gh:ZXShady/enchantum#ea53e47")
 target_link_libraries(${PROJECT_NAME} scn::scn enchantum::enchantum)
+
+#enable colors on windows
+#https://stackoverflow.com/a/77419222
+if (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(${PROJECT_NAME} PUBLIC -fansi-escape-codes -fcolor-diagnostics)
+    target_link_options(${PROJECT_NAME} PUBLIC -fansi-escape-codes -fcolor-diagnostics)
+endif()

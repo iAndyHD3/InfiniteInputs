@@ -1,4 +1,5 @@
 #include <Geode/Geode.hpp>
+#include <Geode/binding/TextGameObject.hpp>
 #include <enchantum/enchantum.hpp>
 #include <string_view>
 #include "TextGameObject.hpp"
@@ -8,6 +9,10 @@
 using namespace geode::prelude;
 
 void MyTextGameObject::setupInputTrigger() {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return;
+    }
+
     auto view = std::string_view(m_text);
     if (!view.starts_with("inf_inp:")) return;
 
@@ -21,7 +26,7 @@ void MyTextGameObject::setupInputTrigger() {
     }
 
     if (LevelEditorLayer::get()) {
-        auto parsed_opt = getTupleFromLabel(m_text);
+        auto parsed_opt = getParsedKeyAction(m_text);
         std::string labelStr = "";
 
         if (parsed_opt) {
@@ -64,10 +69,16 @@ void MyTextGameObject::setupInputTrigger() {
 
 void MyTextGameObject::customObjectSetup(gd::vector<gd::string>& p0, gd::vector<void*>& p1) {
     TextGameObject::customObjectSetup(p0, p1);
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return;
+    }
     setupInputTrigger();
 }
 
 void MyTextGameObject::updateTextObject(gd::string p0, bool p1) {
     TextGameObject::updateTextObject(p0, p1);
+    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return;
+    }
     setupInputTrigger();
 }

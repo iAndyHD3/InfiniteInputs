@@ -1,8 +1,12 @@
 #include "GJBaseGameLayer.hpp"
 #include "../TextParsing.hpp"
 #include "../LogVar.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/utils/cocos.hpp"
+#include "LevelKeys.hpp"
+#include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/binding/TextGameObject.hpp>
 #include <scn/scan.h>
 #include <enchantum/enchantum.hpp>
 #include <Geode/cocos/CCDirector.h>
@@ -31,8 +35,11 @@ static bool hasGroup(GameObject* obj, int group)
 }
 
 void MyBaseLayer::Fields::clear() {
-    upKeyMap.clear();
-    downKeyMap.clear();
+    keyMap.clear();
+    simpleKeyMap.clear();
+    clickActionObjects.clear();
+    clickActionAddQueue.clear();
+
     // if(touchDelegate) {
     //     CCTouchDispatcher::get()->removeDelegate(touchDelegate);
     //     touchDelegate = nullptr;
@@ -46,57 +53,46 @@ void MyBaseLayer::Fields::clear() {
     layer = nullptr;
     
     //no clear() in Ext
-    cursorFollowObjects.inner()->removeAllObjects();
+    cursorFollowObjects.clear();
     cursorFollowGroupId = -1;
     wheelUpGroup = -1;
     wheelDownGroup = -1;
 }
 
-auto& MyBaseLayer::Fields::getKeysMap(bool down) {
-    return down ? downKeyMap : upKeyMap;
-}
+
 
 void MyBaseLayer::Fields::addKeyBind(LevelKeys key, bool down, int groupId) {
+    //getKeysMap(down).emplace(key, groupId);
+}
 
-    switch(key) {
-        case LevelKeys::cursor:     cursorFollowGroupId =   groupId; break;
-        case LevelKeys::wheelUp:    wheelUpGroup        =   groupId; break;
-        case LevelKeys::wheelDown:  wheelDownGroup      =   groupId; break;
-
-        default: getKeysMap(down).emplace(key, groupId);
-    }
+void MyBaseLayer::Fields::addClickAction(EffectGameObject* collision, ClickAction action) {
+    clickActionObjects.push_back({collision, std::move(action)});
     addedAtleastOneKey = true;
 }
 
-std::optional<groupId> MyBaseLayer::Fields::getGroupId(LevelKeys k, bool down) {
-    log::debug("FINDING: {}", ETOSTRING(k));
-    if(k == LevelKeys::unknown) return std::nullopt;
 
-    auto map = getKeysMap(down);
-    auto it = map.find(k);
-    if(it != map.end()) {
-        log::debug("{} found in map", enchantum::to_string(k));
-        return it->second;
-    }
-
-    switch(k) {
-        case LevelKeys::cursor: return cursorFollowGroupId;
-        case LevelKeys::wheelDown: return wheelDownGroup;
-        case LevelKeys::wheelUp: return wheelUpGroup;
-        default: return std::nullopt;
-    }
+std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& key) {
+    auto groupid = keyMap.find(key);
+    return groupid != keyMap.end() ? std::optional<groupId>(groupid->second) : std::nullopt;
 }
 
 
 
 
-void MyBaseLayer::Fields::spawnGroupIfDefined(LevelKeys k, bool down) {
-    if(auto group = getGroupId(k, down)) {
-        log::info("KEY: {}, {}, GROUP: {}", enchantum::to_string(k), down ? "down" : "up", *group);
+void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
+    if(auto group = getGroupId(key)) {
+        log::info("KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
         layer->spawnGroup(*group, false, 0, {}, 0, 0);
-        return;
     }
 }
+
+void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
+    if(auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
+        log::info("[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
+        layer->spawnGroup(group->second, false, 0, {}, 0, 0);
+    }
+}
+
 
 MyBaseLayer::Fields::~Fields() {
 
@@ -126,25 +122,19 @@ void MyBaseLayer::update(float dt)
 
 
 void MyBaseLayer::delayedInit(float) {
+
     if(m_isEditor) {
         schedule(schedule_selector(MyBaseLayer::editorActiveHandlerLoop), 0);
         return;
     }
+
+
 
     scheduleOnce(schedule_selector(MyBaseLayer::setupKeybinds_step0), 0);
 
     //start directly in playlayer
 }
 
-std::vector<std::string_view> MyBaseLayer::getAllTextsFromLabels(GJBaseGameLayer* pl) {
-    std::vector<std::string_view> texts;
-
-    for(const auto& obj : CCArrayExt<GameObject*>(pl->m_objects)) {
-        if(obj->m_objectID != 914) continue;
-        texts.emplace_back(static_cast<TextGameObject*>(obj)->m_text);
-    }
-    return texts;
-}
 
 void MyBaseLayer::editorActiveHandlerLoop(float) {
     auto fields = m_fields.self();
@@ -205,7 +195,7 @@ void MyBaseLayer::updateLoop(float) {
     }
 
     if (!fields->spawnedModLoaded) {
-        fields->spawnGroupIfDefined(LevelKeys::modLoaded, false);
+        fields->spawnGroupKeys({LevelKeys::modLoaded, false});
         fields->spawnedModLoaded = true;
     }
 }
@@ -224,21 +214,10 @@ void MyBaseLayer::setupLevelStart(LevelSettingsObject* p0) {
     m_fields->spawnedModLoaded = false;
 }
 
-void MyBaseLayer::setupText(std::string_view t) {
-    log::debug("parsing {}", t);
-    if(!t.starts_with("inf_inp:")) return;
-    auto parsed_opt = getTupleFromLabel(t);
-    if(!parsed_opt) {
-        return;
-    }
-    auto& parsed = *parsed_opt;
-    m_fields->addKeyBind(parsed.key, parsed.keyDown, parsed.group);
-}
-
 void MyBaseLayer::setupCursorGroup(int cursorGroupId) {
     log::info("SETTING UP CURSOR GROUP {}", cursorGroupId);
     m_fields->cursorFollowGroupId = cursorGroupId;
-    m_fields->cursorFollowObjects.inner()->removeAllObjects();
+    m_fields->cursorFollowObjects.clear();
     for(const auto& o : CCArrayExt<GameObject*>(m_objects)) {
         if(hasGroup(o, cursorGroupId)) {
             m_fields->cursorFollowObjects.push_back(o);
@@ -249,14 +228,52 @@ void MyBaseLayer::setupCursorGroup(int cursorGroupId) {
 //true if correctly registered atleast one keybind
 bool MyBaseLayer::setupTextLabelKeys_step1() {
     auto fields = m_fields.self();
-    auto texts = getAllTextsFromLabels(this);
-    std::ranges::for_each(texts, [this](auto& t) {setupText(t); });
 
-    log::info("Added {} down keys", fields->downKeyMap.size());
-    log::info("Added {} up keys", fields->upKeyMap.size());
+    //parse all labels
+    for(const auto& obj : m_objects->asExt<GameObject*>()) {
+        if(obj->m_objectID == 914) {
+            if(auto parsed = parseObjectString(static_cast<TextGameObject*>(obj)->m_text)) {
+                if(KeyAction* label = std::get_if<KeyAction>(&*parsed)) {
+                    fields->keyMap.emplace(Fields::KeyActionMapKey{label->key, label->keyDown}, label->group);
+                }
+                else if(SimpleKeyAction* label = std::get_if<SimpleKeyAction>(&*parsed)) {
+                    fields->simpleKeyMap.emplace(label->key, label->group);
+                } 
+                else if(ClickAction* action = std::get_if<ClickAction>(&*parsed)) {
+                    m_fields->clickActionAddQueue.push_back(std::move(*action));
+                }
+            }
+            else {
+                log::error("Failed to parse label: {}", static_cast<TextGameObject*>(obj)->m_text);
+            }
+        }
+    }
+
+    for(const auto& obj : m_objects->asExt<EffectGameObject*>())
+    {
+        if(obj->m_objectID == 1816) {
+            for(const auto& clickaction : fields->clickActionAddQueue) {
+                if(clickaction.collisionBlockId == obj->m_itemID) {
+                    fields->clickActionObjects.emplace_back(obj, std::move(clickaction));
+                }
+            }
+        }
+    }
+
+
+
+
+    log::info("Added {} down keys", fields->keyMap.size());
+    log::info("Added {} simple keys", fields->simpleKeyMap.size());
+    log::info("Button Objects: {}", fields->clickActionObjects.size());
     log::info("Cursor Group: {}", fields->cursorFollowGroupId);
     log::info("Wheel Up Group: {}", fields->wheelUpGroup);
     log::info("Wheel Down Group: {}", fields->wheelDownGroup);
+
+    fields->addedAtleastOneKey = !fields->keyMap.empty()
+        || !fields->simpleKeyMap.empty()
+        || !fields->clickActionObjects.empty();
+        
     return fields->addedAtleastOneKey;
 }
 
@@ -275,24 +292,8 @@ void MyBaseLayer::setupKeybinds_step0(float) {
     auto fields = m_fields.self();
     fields->layer = this;
 
-    // if(!fields->touchDelegate) {
-    //     fields->touchDelegate = new MyClickDelegate;
-    //     fields->touchDelegate->autorelease();
-    //     fields->touchDelegate->setID("iandyhd.keyboardsupport/touch-delegate");
-    //     fields->touchDelegate->setContentSize(this->getContentSize());
-    //     addChild(fields->touchDelegate, INT_MAX);
-    //     CCTouchDispatcher::get()->addTargetedDelegate(fields->touchDelegate, INT_MIN, false);
-    // }
 
-    // if(!fields->scrollDelegate) {
-    //     fields->scrollDelegate = new MyScrollDelegate;
-    //     fields->scrollDelegate->autorelease();
-    //     fields->scrollDelegate->setID("iandyhd.keyboardsupport/scroll-delegate");
-    //     fields->scrollDelegate->setContentSize(this->getContentSize());
-    //     addChild(fields->scrollDelegate, INT_MAX);
-    //     alpha::dispatcher::ScrollDispatcher::get()->registerScroll(fields->scrollDelegate);
-    // }
-
+    //TODO: create setup late actions
     if(fields->cursorFollowGroupId != -1) {
         setupCursorGroup(fields->cursorFollowGroupId);
     }
@@ -303,15 +304,13 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 
 
 void MyBaseLayer::handleScroll(float x, float y) {
-    if(y != 0) {
-        //scrolling up is minus apparently
-        nh_handleKeypress(y < 0 ? LevelKeys::wheelUp : LevelKeys::wheelDown, /*this is ignored*/ false);
-    }
+    if(y == 0) return;
+    m_fields->spawnGroupSimple(y > 0 ? LevelKeys::wheelUp : LevelKeys::wheelDown);
 }
 
 void MyBaseLayer::nh_handleKeypress(LevelKeys key, bool down) {
     log::debug("Handle key press");
-    m_fields->spawnGroupIfDefined(key, down);
+    m_fields->spawnGroupKeys({key, down});
 }
 
 // bool MyClickDelegate::clickBegan(alpha::dispatcher::TouchEvent *touch) {
