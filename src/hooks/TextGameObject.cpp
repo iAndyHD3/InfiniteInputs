@@ -1,10 +1,11 @@
+#include "TextGameObject.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/binding/TextGameObject.hpp>
 #include <enchantum/enchantum.hpp>
 #include <string_view>
-#include "TextGameObject.hpp"
 #include "../TextParsing.hpp"
 #include "LevelKeys.hpp"
+
 
 using namespace geode::prelude;
 
@@ -14,7 +15,8 @@ void MyTextGameObject::setupInputTrigger() {
     }
 
     auto view = std::string_view(m_text);
-    if (!view.starts_with("inf_inp:")) return;
+    if (!view.starts_with("inf_inp:"))
+        return;
 
     // treat like trigger :3 (aka move out of batch node and not allow color to be set normally)
     m_addToNodeContainer = true;
@@ -69,7 +71,7 @@ void MyTextGameObject::setupInputTrigger() {
 
 void MyTextGameObject::customObjectSetup(gd::vector<gd::string>& p0, gd::vector<void*>& p1) {
     TextGameObject::customObjectSetup(p0, p1);
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return;
     }
     setupInputTrigger();
@@ -77,7 +79,7 @@ void MyTextGameObject::customObjectSetup(gd::vector<gd::string>& p0, gd::vector<
 
 void MyTextGameObject::updateTextObject(gd::string p0, bool p1) {
     TextGameObject::updateTextObject(p0, p1);
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return;
     }
     setupInputTrigger();

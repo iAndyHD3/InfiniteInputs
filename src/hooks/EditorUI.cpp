@@ -1,6 +1,4 @@
 #include "EditorUI.hpp"
-#include "Geode/loader/Mod.hpp"
-#include "Geode/utils/cocos.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/binding/CreateMenuItem.hpp>
 #include <Geode/binding/EditButtonBar.hpp>
@@ -8,6 +6,9 @@
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/TextGameObject.hpp>
 #include "../InputTriggerPopup.hpp"
+#include "Geode/loader/Mod.hpp"
+#include "Geode/utils/cocos.hpp"
+
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
 
@@ -16,7 +17,7 @@ using namespace geode::prelude;
 void MyEditorUI::setupCreateMenu() {
     EditorUI::setupCreateMenu();
 
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return;
     }
 
@@ -35,15 +36,12 @@ void MyEditorUI::setupCreateMenu() {
     }
 
     bar->m_buttonArray->insertObject(btn, idx);
-    
-    bar->reloadItems(
-        GameManager::get()->getIntGameVariable("0049"),
-        GameManager::get()->getIntGameVariable("0050")
-    );
+
+    bar->reloadItems(GameManager::get()->getIntGameVariable("0049"), GameManager::get()->getIntGameVariable("0050"));
 }
 
 CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return EditorUI::getCreateBtn(id, bg);
     }
 
@@ -51,8 +49,9 @@ CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
         auto btn = getCreateBtn(1, 4);
 
         auto arr = CCArray::create();
-        auto spr = spriteFromObjectString("1,914,31,aW5mX2lucDplZGl0b3JUYWIgPSAw", false, false, 0, arr, nullptr, nullptr);
-        
+        auto spr =
+                spriteFromObjectString("1,914,31,aW5mX2lucDplZGl0b3JUYWIgPSAw", false, false, 0, arr, nullptr, nullptr);
+
         spr->setScale(std::min(32.f / spr->getContentHeight(), 32.f / spr->getContentWidth()));
 
         auto buttonSpr = static_cast<ButtonSprite*>(btn->getNormalImage());
@@ -60,23 +59,24 @@ CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
             obj->setVisible(false);
         }
         buttonSpr->addChild(spr);
-        spr->setPosition({20,21});
+        spr->setPosition({20, 21});
 
         btn->m_objectID = INPUT_TRIGGER_ID;
-        btn->setTag(INPUT_TRIGGER_ID); 
-        return btn; 
+        btn->setTag(INPUT_TRIGGER_ID);
+        return btn;
     }
     return EditorUI::getCreateBtn(id, bg);
 }
 
 void MyEditorUI::onCreateObject(int objectID) {
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return EditorUI::onCreateObject(objectID);
     }
 
-    if (objectID != INPUT_TRIGGER_ID) return EditorUI::onCreateObject(objectID);
+    if (objectID != INPUT_TRIGGER_ID)
+        return EditorUI::onCreateObject(objectID);
     objectID = 914;
-    
+
     EditorUI::onCreateObject(objectID);
 
     if (m_selectedObject) {
@@ -86,19 +86,22 @@ void MyEditorUI::onCreateObject(int objectID) {
 }
 
 void MyEditorUI::clickOnPosition(cocos2d::CCPoint position) {
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return EditorUI::clickOnPosition(position);
     }
 
     EditorUI::clickOnPosition(position);
-    if (m_selectedObjectIndex != 914) return;
-    if (m_selectedMode != 2) return;
+    if (m_selectedObjectIndex != 914)
+        return;
+    if (m_selectedMode != 2)
+        return;
 
     auto nodePos = m_editorLayer->m_objectLayer->convertToNodeSpace(position);
 
     auto obj = m_editorLayer->objectAtPosition(nodePos);
     auto textGameObject = typeinfo_cast<TextGameObject*>(obj);
-    if (!textGameObject) return;
+    if (!textGameObject)
+        return;
 
     std::string_view view = textGameObject->m_text;
     if (view.starts_with("inf_inp:")) {
@@ -108,21 +111,24 @@ void MyEditorUI::clickOnPosition(cocos2d::CCPoint position) {
 }
 
 void MyEditorUI::editObject(cocos2d::CCObject* sender) {
-    if(!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+    if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return EditorUI::editObject(sender);
     }
-    
+
     std::vector<Ref<GameObject>> selectedObjects;
-    if (m_selectedObject) selectedObjects.push_back(m_selectedObject);
+    if (m_selectedObject)
+        selectedObjects.push_back(m_selectedObject);
     if (m_selectedObjects) {
         auto arr = CCArrayExt<GameObject*>(m_selectedObjects);
-        selectedObjects.insert(selectedObjects.end(), arr.begin(), arr.end()); 
+        selectedObjects.insert(selectedObjects.end(), arr.begin(), arr.end());
     }
 
-    if (selectedObjects.size() == 0) return EditorUI::editObject(sender);
+    if (selectedObjects.size() == 0)
+        return EditorUI::editObject(sender);
 
     int objectID = selectedObjects[0]->m_objectID;
-    if (objectID != 914) return EditorUI::editObject(sender);
+    if (objectID != 914)
+        return EditorUI::editObject(sender);
 
     if (selectedObjects.size() > 1) {
         for (auto obj : selectedObjects) {
@@ -131,6 +137,4 @@ void MyEditorUI::editObject(cocos2d::CCObject* sender) {
             }
         }
     }
-
-    InputTriggerPopup::create(selectedObjects)->show();
 }

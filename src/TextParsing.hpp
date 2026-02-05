@@ -1,7 +1,8 @@
 #pragma once
-#include <string_view>
 #include <optional>
+#include <string_view>
 #include "LevelKeys.hpp"
+
 
 struct KeyAction {
     LevelKeys key;
@@ -35,5 +36,7 @@ std::string getLabelFromSimpleKeyAction(const SimpleKeyAction& t);
 std::optional<SimpleKeyAction> getSimpleKeyActionFromLabel(std::string_view t);
 
 
-
 std::optional<II_ObjectAction> parseObjectString(std::string_view t);
+
+
+bool foundOldFormatString(std::string_view t);

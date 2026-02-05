@@ -1,9 +1,10 @@
 #include "InputTriggerPopup.hpp"
-#include "Geode/ui/Popup.hpp"
 #include <Geode/Geode.hpp>
 #include <algorithm>
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
+#include "Geode/ui/Popup.hpp"
+
 
 using namespace geode::prelude;
 
@@ -20,7 +21,7 @@ InputTriggerPopup* InputTriggerPopup::create(std::vector<geode::Ref<GameObject>>
 
 bool InputTriggerPopup::init(std::vector<geode::Ref<GameObject>> objects) {
 
-    if(!Popup::init(440.f, 310.f)) {
+    if (!Popup::init(440.f, 310.f)) {
         return false;
     }
     m_noElasticity = true;
@@ -35,17 +36,16 @@ bool InputTriggerPopup::init(std::vector<geode::Ref<GameObject>> objects) {
     m_mainLayer->addChild(title);
     m_mainLayer->setID("main-layer");
 
-    auto helpBtn = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_infoIcon_001.png", 1.f, [] (CCMenuItemSpriteExtra* self) {
-        geode::createQuickPopup("Help",
-R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. This trigger works similarly to the UI trigger; it is processed at the start of the level, and cannot be spawned or toggled.
+    auto helpBtn =
+            CCMenuItemExt::createSpriteExtraWithFrameName("GJ_infoIcon_001.png", 1.f, [](CCMenuItemSpriteExtra* self) {
+                geode::createQuickPopup(
+                        "Help",
+                        R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. This trigger works similarly to the UI trigger; it is processed at the start of the level, and cannot be spawned or toggled.
 <cb>On Mod Loaded</c> activates the group if this mod is installed.
 <cp>Trigger On Release</c> activates the group on key or mouse release instead of press.
 <co>Lock Cursor</c> locks the group to the cursor position instead of activating it.)",
-            "OK",
-            nullptr,
-            nullptr
-        );
-    });
+                        "OK", nullptr, nullptr);
+            });
     helpBtn->setID("info-button");
 
     helpBtn->setPosition({18, m_mainLayer->getContentHeight() - 18});
@@ -84,7 +84,7 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
     groupInputContainer->addChild(groupInputLabel);
 
     m_groupInput = geode::TextInput::create(48, "Num");
-    m_groupInput->setCallback([this] (const std::string& str) {
+    m_groupInput->setCallback([this](const std::string& str) {
         auto numRes = geode::utils::numFromString<int>(str);
         m_label.group = numRes.unwrapOrDefault();
         m_modifiedGroup = true;
@@ -96,26 +96,30 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
 
     m_groupInput->setPosition({groupInputContainer->getContentWidth() * 0.5f, m_groupInput->getContentHeight() * 0.5f});
     groupInputBG->setPosition(m_groupInput->getPosition());
-    groupInputLabel->setPosition({groupInputContainer->getContentWidth() * 0.5f, m_groupInput->getPositionY() + m_groupInput->getContentHeight() * 0.5f + 5});
+    groupInputLabel->setPosition(
+            {groupInputContainer->getContentWidth() * 0.5f,
+             m_groupInput->getPositionY() + m_groupInput->getContentHeight() * 0.5f + 5});
 
     groupInputContainer->addChild(m_groupInput);
 
     auto groupInputBounds = m_groupInput->boundingBox();
 
-    auto decrGroupBtn = CCMenuItemExt::createSpriteExtraWithFrameName("edit_leftBtn_001.png", 1.f, [this] (CCMenuItemSpriteExtra* self)  {
-        m_label.group = std::clamp(m_label.group - 1, 0, 9999);
-        m_groupInput->setString(geode::utils::numToString(m_label.group));
-        m_modifiedGroup = true;
-    });
+    auto decrGroupBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
+            "edit_leftBtn_001.png", 1.f, [this](CCMenuItemSpriteExtra* self) {
+                m_label.group = std::clamp(m_label.group - 1, 0, 9999);
+                m_groupInput->setString(geode::utils::numToString(m_label.group));
+                m_modifiedGroup = true;
+            });
 
     decrGroupBtn->setPosition({groupInputBounds.getMinX() - 25, m_groupInput->getPositionY()});
     decrGroupBtn->setID("decrement-group-button");
 
-    auto incrGroupBtn = CCMenuItemExt::createSpriteExtraWithFrameName("edit_rightBtn_001.png", 1.f, [this] (CCMenuItemSpriteExtra* self)  {
-        m_label.group = std::clamp(m_label.group + 1, 0, 9999);
-        m_groupInput->setString(geode::utils::numToString(m_label.group));
-        m_modifiedGroup = true;
-    });
+    auto incrGroupBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
+            "edit_rightBtn_001.png", 1.f, [this](CCMenuItemSpriteExtra* self) {
+                m_label.group = std::clamp(m_label.group + 1, 0, 9999);
+                m_groupInput->setString(geode::utils::numToString(m_label.group));
+                m_modifiedGroup = true;
+            });
 
     incrGroupBtn->setPosition({groupInputBounds.getMaxX() + 25, m_groupInput->getPositionY()});
     incrGroupBtn->setID("increment-group-button");
@@ -134,7 +138,7 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
 
     m_mainLayer->addChild(groupInputContainer);
 
-    m_onReleaseToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this] (CCMenuItemToggler* toggler) {
+    m_onReleaseToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
         m_label.keyDown = toggler->isToggled();
         m_modifiedRelease = true;
     });
@@ -147,7 +151,9 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
     m_onReleaseLabel = CCLabelBMFont::create("Trigger On\nRelease", "bigFont.fnt");
     m_onReleaseLabel->setScale(0.35f);
     m_onReleaseLabel->setAnchorPoint({0.f, 0.5f});
-    m_onReleaseLabel->setPosition({m_onReleaseToggle->getPositionX() + m_onReleaseToggle->getContentWidth() * 0.5f + 10, m_onReleaseToggle->getPositionY()});
+    m_onReleaseLabel->setPosition(
+            {m_onReleaseToggle->getPositionX() + m_onReleaseToggle->getContentWidth() * 0.5f + 10,
+             m_onReleaseToggle->getPositionY()});
     m_onReleaseLabel->setID("on-release-label");
 
     m_mainLayer->addChild(m_onReleaseLabel);
@@ -170,9 +176,10 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
 
     tabsMenu->updateLayout();
 
-    m_onModLoadedToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this] (CCMenuItemToggler* toggler) {
+    m_onModLoadedToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
         for (const auto& [toggle, tab] : m_toggles) {
-            if (toggle == toggler) continue;
+            if (toggle == toggler)
+                continue;
             toggle->toggle(false);
         }
         m_label.key = !toggler->isToggled() ? LevelKeys::modLoaded : LevelKeys::empty;
@@ -190,7 +197,9 @@ R"(Activates a <cg>Group ID</c> based on a <cy>key</c> or <cy>mouse</c> action. 
     auto onModLoadedLabel = CCLabelBMFont::create("On Mod\nLoaded", "bigFont.fnt");
     onModLoadedLabel->setScale(0.35f);
     onModLoadedLabel->setAnchorPoint({0.f, 0.5f});
-    onModLoadedLabel->setPosition({m_onModLoadedToggle->getPositionX() + m_onModLoadedToggle->getContentWidth() * 0.5f + 10, m_onModLoadedToggle->getPositionY()});
+    onModLoadedLabel->setPosition(
+            {m_onModLoadedToggle->getPositionX() + m_onModLoadedToggle->getContentWidth() * 0.5f + 10,
+             m_onModLoadedToggle->getPositionY()});
     onModLoadedLabel->setID("on-mod-loaded-label");
 
     m_mainLayer->addChild(onModLoadedLabel);
@@ -242,7 +251,7 @@ void InputTriggerPopup::setupValues() {
             m_label.key = parsed.key;
             for (const auto& [toggle, tab] : m_toggles) {
                 auto key = static_cast<ObjWrapper<LevelKeys>*>(toggle->getUserObject("key"_spr));
-                
+
                 if (key->getValue() == parsed.key) {
                     toggle->toggle(true);
                     m_tabs[tab]->setVisible(true);
@@ -278,16 +287,17 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
     checkboxMenu->setAnchorPoint({0.f, 0.5f});
     checkboxMenu->setID("checkbox-menu");
 
-    auto toggler = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this, key] (CCMenuItemToggler* self) {
+    auto toggler = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this, key](CCMenuItemToggler* self) {
         for (const auto& [toggle, tab] : m_toggles) {
-            if (toggle == self) continue;
+            if (toggle == self)
+                continue;
             toggle->toggle(false);
         }
         m_label.key = !self->isToggled() ? key : LevelKeys::empty;
         m_modifiedKey = true;
         checkSpecialKey();
     });
-    
+
 
     checkboxMenu->addChild(toggler);
     checkboxMenu->setContentSize(toggler->getContentSize());
@@ -307,7 +317,8 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
 
     checkboxContainer->addChild(checkboxLabel);
 
-    checkboxContainer->setContentWidth(checkboxMenu->getScaledContentWidth() + 10.f + checkboxLabel->getScaledContentWidth() + 10.f);
+    checkboxContainer->setContentWidth(
+            checkboxMenu->getScaledContentWidth() + 10.f + checkboxLabel->getScaledContentWidth() + 10.f);
 
     toggler->setUserObject("key"_spr, ObjWrapper<LevelKeys>::create(key));
     toggler->setID(fmt::format("{}-toggle", enchantum::to_string(key)));
@@ -336,7 +347,7 @@ CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label,
 
     keyLabelOff->setPosition(offSpr->getContentSize() * 0.5f + CCPoint{0.f, 1.f});
 
-    auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [this, tab] (CCMenuItemToggler* self) {
+    auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [this, tab](CCMenuItemToggler* self) {
         bool wasToggled = self->isToggled();
 
         for (const auto& toggle : m_tabToggles) {
@@ -361,7 +372,8 @@ CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label,
     return toggler;
 }
 
-CCMenuItemToggler* InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::string& labelOverride) {
+CCMenuItemToggler*
+InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::string& labelOverride) {
     auto onSpr = CCScale9Sprite::create("GJ_button_02.png");
     onSpr->setContentSize({width, 40});
     auto offSpr = CCScale9Sprite::create("GJ_button_04.png");
@@ -371,8 +383,8 @@ CCMenuItemToggler* InputTriggerPopup::createKeyboardToggler(LevelKeys key, float
     if (labelOverride.empty()) {
         keyStr = std::string(fixKeyName(enchantum::to_string(key)));
         utils::string::toUpperIP(keyStr);
-    }
-    else keyStr = labelOverride;
+    } else
+        keyStr = labelOverride;
 
     auto keyLabelOn = CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
     keyLabelOn->setScale(0.5f);
@@ -388,9 +400,10 @@ CCMenuItemToggler* InputTriggerPopup::createKeyboardToggler(LevelKeys key, float
     offSpr->setScale(0.6f);
     offSpr->addChild(keyLabelOff);
 
-    auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [this, key] (CCMenuItemToggler* self) {
+    auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [this, key](CCMenuItemToggler* self) {
         for (const auto& [toggle, tab] : m_toggles) {
-            if (toggle == self) continue;
+            if (toggle == self)
+                continue;
             toggle->toggle(false);
         }
         m_label.key = !self->isToggled() ? key : LevelKeys::empty;
@@ -444,7 +457,7 @@ void InputTriggerPopup::setupKeyboardTab() {
     row1Menu->addChild(createKeyboardToggler(LevelKeys::f10));
     row1Menu->addChild(createKeyboardToggler(LevelKeys::f11));
     row1Menu->addChild(createKeyboardToggler(LevelKeys::f12));
-    
+
     row1Menu->updateLayout();
     keyboardContainer->addChild(row1Menu);
 
@@ -460,7 +473,7 @@ void InputTriggerPopup::setupKeyboardTab() {
     row2Menu->addChild(createKeyboardToggler(LevelKeys::KEY_8));
     row2Menu->addChild(createKeyboardToggler(LevelKeys::KEY_9));
     row2Menu->addChild(createKeyboardToggler(LevelKeys::KEY_0));
-    
+
     row2Menu->updateLayout();
     keyboardContainer->addChild(row2Menu);
 
@@ -476,7 +489,7 @@ void InputTriggerPopup::setupKeyboardTab() {
     row3Menu->addChild(createKeyboardToggler(LevelKeys::i));
     row3Menu->addChild(createKeyboardToggler(LevelKeys::o));
     row3Menu->addChild(createKeyboardToggler(LevelKeys::p));
-    
+
     row3Menu->updateLayout();
     keyboardContainer->addChild(row3Menu);
 
@@ -492,7 +505,7 @@ void InputTriggerPopup::setupKeyboardTab() {
     row4Menu->addChild(createKeyboardToggler(LevelKeys::k));
     row4Menu->addChild(createKeyboardToggler(LevelKeys::l));
     row4Menu->addChild(createKeyboardToggler(LevelKeys::enter, 90, "Enter"));
-    
+
     row4Menu->updateLayout();
     keyboardContainer->addChild(row4Menu);
 
@@ -506,7 +519,7 @@ void InputTriggerPopup::setupKeyboardTab() {
     row5Menu->addChild(createKeyboardToggler(LevelKeys::n));
     row5Menu->addChild(createKeyboardToggler(LevelKeys::m));
     row5Menu->addChild(createKeyboardToggler(LevelKeys::leftShift, 80, "Shift"));
-    
+
     row5Menu->updateLayout();
     keyboardContainer->addChild(row5Menu);
 
@@ -558,8 +571,7 @@ void InputTriggerPopup::setupMouseTab() {
 
     innerContainer->addChild(createMouseToggler("Lock To Cursor", LevelKeys::cursor));
 
-    innerContainer->updateLayout()
-;
+    innerContainer->updateLayout();
     mouseContainer->addChild(innerContainer);
 
     m_mainLayer->addChild(mouseContainer);
@@ -567,18 +579,18 @@ void InputTriggerPopup::setupMouseTab() {
 
 void InputTriggerPopup::checkSpecialKey() {
     switch (m_label.key) {
-    case LevelKeys::wheelUp:
-    case LevelKeys::wheelDown:
-    case LevelKeys::cursor:
-    case LevelKeys::modLoaded:
-        m_onReleaseToggle->toggle(false);
-        m_onReleaseToggle->setVisible(false);
-        m_onReleaseLabel->setVisible(false);
-        break;
-    default:
-        m_onReleaseToggle->setVisible(true);
-        m_onReleaseLabel->setVisible(true);
-        break;
+        case LevelKeys::wheelUp:
+        case LevelKeys::wheelDown:
+        case LevelKeys::cursor:
+        case LevelKeys::modLoaded:
+            m_onReleaseToggle->toggle(false);
+            m_onReleaseToggle->setVisible(false);
+            m_onReleaseLabel->setVisible(false);
+            break;
+        default:
+            m_onReleaseToggle->setVisible(true);
+            m_onReleaseLabel->setVisible(true);
+            break;
     }
 }
 
@@ -601,8 +613,7 @@ void InputTriggerPopup::onClose(CCObject* sender) {
             }
             auto label = getLabelFromKeyAction(parsed);
             textObj->updateTextObject(label, false);
-        }
-        else {
+        } else {
             auto label = getLabelFromKeyAction(m_label);
             textObj->updateTextObject(label, false);
         }

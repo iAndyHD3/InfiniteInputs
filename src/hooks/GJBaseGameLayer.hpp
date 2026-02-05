@@ -1,21 +1,23 @@
 #pragma once
-#include "../LevelKeys.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
-#include "Geode/utils/cocos.hpp"
 #include <Geode/modify/GJBaseGameLayer.hpp>
-
-//#include <alphalaneous.alphas-ui-pack/include/touch/Touch.hpp>
-//#include "alphalaneous.alphas-ui-pack/include/touch/TouchDispatcher.hpp"
-// #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/AdvancedScrollDelegate.hpp>
-// #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/ScrollDispatcher.hpp>
+#include "../LevelKeys.hpp"
+#include "Geode/utils/cocos.hpp"
 
 
+// #include <alphalaneous.alphas-ui-pack/include/touch/Touch.hpp>
+// #include "alphalaneous.alphas-ui-pack/include/touch/TouchDispatcher.hpp"
+//  #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/AdvancedScrollDelegate.hpp>
+//  #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/ScrollDispatcher.hpp>
+
+
+#include <Geode/modify/GJBaseGameLayer.hpp>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
-#include <string_view>
-#include <Geode/modify/GJBaseGameLayer.hpp>
 #include "../TextParsing.hpp"
+
 
 using namespace geode::prelude;
 
@@ -31,19 +33,16 @@ using groupId = int;
 // };
 
 
-class $modify(MyBaseLayer, GJBaseGameLayer)
-{
+class $modify(MyBaseLayer, GJBaseGameLayer) {
     struct Fields {
 
         struct KeyActionMapKey {
             LevelKeys key;
             bool keyDown;
 
-            bool operator==(const KeyActionMapKey& other) const {
-                return key == other.key && keyDown == other.keyDown;
-            }
+            bool operator==(const KeyActionMapKey& other) const { return key == other.key && keyDown == other.keyDown; }
         };
-        
+
         struct KeyActionMapKeyHash {
             std::size_t operator()(const KeyActionMapKey& k) const {
                 return std::hash<LevelKeys>()(k.key) ^ std::hash<bool>()(k.keyDown);
@@ -52,17 +51,19 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
 
         std::unordered_map<KeyActionMapKey, groupId, KeyActionMapKeyHash> keyMap;
 
-        //SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow
+        // SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow
         std::unordered_map<LevelKeys, groupId> simpleKeyMap;
 
         std::vector<std::pair<GameObject*, ClickAction>> clickActionObjects;
 
-        //only used as queue during initialization
+        // only used as queue during initialization
         std::vector<ClickAction> clickActionAddQueue;
 
         bool spawnedModLoaded = false;
         bool active = false;
         bool addedAtleastOneKey = false;
+        bool oldFormatFound = false;
+
         GJBaseGameLayer* layer = nullptr;
 
         std::vector<GameObject*> cursorFollowObjects;
@@ -71,28 +72,22 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
         int cursorFollowGroupId = -1;
         int wheelUpGroup = -1;
         int wheelDownGroup = -1;
-        
-        void clear();
 
         void addKeyBind(LevelKeys key, bool down, int groupId);
         void addClickAction(EffectGameObject* collision, ClickAction action);
 
-        //TODO: unify this with overloads or something
+        // TODO: unify this with overloads or something
         std::optional<groupId> getGroupId(const KeyActionMapKey&);
 
 
         void spawnGroupKeys(const KeyActionMapKey&);
         void spawnGroupSimple(LevelKeys key);
-
-        ~Fields();
     };
 
 
-    $override
-    bool init();
+    $override bool init();
 
-    $override
-    void update(float);
+    $override void update(float);
 
 
     void delayedInit(float);
@@ -101,7 +96,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
 
     void editorActiveHandlerLoop(float);
 
-    //void handleClick(alpha::dispatcher::TouchEvent* touch, bool down);
+    // void handleClick(alpha::dispatcher::TouchEvent* touch, bool down);
 
     void updateLoop(float);
 
@@ -112,13 +107,13 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
 
     void setupText(std::string_view t);
 
-    //TODO: unify all of this
+    // TODO: unify all of this
     void setupCursorGroup(int cursorGroupId);
 
-    //true if correctly registered (TODO: or will register) atleast one keybind
+    // true if correctly registered (TODO: or will register) atleast one keybind
     bool setupTextLabelKeys_step1();
 
-    //TODO: check this
+    // TODO: check this
     bool isModActive();
 
     void setupKeybinds_step0(float);
@@ -128,5 +123,4 @@ class $modify(MyBaseLayer, GJBaseGameLayer)
     void nh_handleKeypress(LevelKeys key, bool down);
 
     cocos2d::CCPoint screenToGame(const cocos2d::CCPoint& screenPos);
-
 };

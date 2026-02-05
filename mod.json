@@ -16,6 +16,14 @@
 		"community": "https://discord.gg/7kyvwJVcqJ"
 	},
 
+	"settings": {
+		"trigger-ui":{
+			"type": "bool",
+			"default": true,
+			"name": "Custom Trigger UI",
+			"description": "Disables the custom trigger UI. This provides access to edit the text labels directly. <cr>Disable this if you encounter any crashes while entering the editor</c>"
+		}
+	},
 
 	"tags": ["editor", "offline", "customization", "gameplay"]
 }

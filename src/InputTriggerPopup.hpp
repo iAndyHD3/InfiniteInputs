@@ -2,8 +2,8 @@
 
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/binding/GameObject.hpp>
-#include <Geode/ui/Popup.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <unordered_map>
 #include <vector>
@@ -11,9 +11,11 @@
 #include "LevelKeys.hpp"
 #include "TextParsing.hpp"
 
+
 class InputTriggerPopup : public geode::Popup {
 public:
     static InputTriggerPopup* create(std::vector<geode::Ref<GameObject>> objects);
+
 protected:
     bool init(std::vector<geode::Ref<GameObject>> objects);
     void onClose(CCObject* sender) override;
@@ -33,7 +35,7 @@ protected:
     bool m_modifiedKey = false;
     bool m_modifiedRelease = false;
 
-    //TODO: change this to the typedef
+    // TODO: change this to the typedef
     KeyAction m_label;
 
     geode::TextInput* m_groupInput;

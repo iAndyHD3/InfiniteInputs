@@ -1,16 +1,18 @@
 #include "GJBaseGameLayer.hpp"
-#include "../TextParsing.hpp"
-#include "../LogVar.hpp"
-#include "Geode/loader/Log.hpp"
-#include "Geode/utils/cocos.hpp"
-#include "LevelKeys.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/binding/TextGameObject.hpp>
-#include <scn/scan.h>
-#include <enchantum/enchantum.hpp>
 #include <Geode/cocos/CCDirector.h>
+#include <enchantum/enchantum.hpp>
 #include <numbers>
+#include <scn/scan.h>
+#include "../LogVar.hpp"
+#include "../TextParsing.hpp"
+#include "Geode/loader/Loader.hpp"
+#include "Geode/loader/Log.hpp"
+#include "Geode/ui/Popup.hpp"
+#include "Geode/utils/cocos.hpp"
+#include "LevelKeys.hpp"
 
 
 #define ETOSTRING(k) enchantum::to_string(k)
@@ -24,45 +26,17 @@ static gd::vector<short> getGroupIDs(GameObject* obj) {
     return res;
 }
 
-static bool hasGroup(GameObject* obj, int group)
-{
-    for (const auto& g : getGroupIDs(obj))
-    {
+static bool hasGroup(GameObject* obj, int group) {
+    for (const auto& g : getGroupIDs(obj)) {
         if (g == group)
             return true;
     }
     return false;
 }
 
-void MyBaseLayer::Fields::clear() {
-    keyMap.clear();
-    simpleKeyMap.clear();
-    clickActionObjects.clear();
-    clickActionAddQueue.clear();
-
-    // if(touchDelegate) {
-    //     CCTouchDispatcher::get()->removeDelegate(touchDelegate);
-    //     touchDelegate = nullptr;
-    // }
-    // if(scrollDelegate) {
-    //     alpha::dispatcher::ScrollDispatcher::get()->unregisterScroll(scrollDelegate);
-    //     scrollDelegate = nullptr;
-    // }
-
-    active = false;
-    layer = nullptr;
-    
-    //no clear() in Ext
-    cursorFollowObjects.clear();
-    cursorFollowGroupId = -1;
-    wheelUpGroup = -1;
-    wheelDownGroup = -1;
-}
-
-
 
 void MyBaseLayer::Fields::addKeyBind(LevelKeys key, bool down, int groupId) {
-    //getKeysMap(down).emplace(key, groupId);
+    // getKeysMap(down).emplace(key, groupId);
 }
 
 void MyBaseLayer::Fields::addClickAction(EffectGameObject* collision, ClickAction action) {
@@ -77,41 +51,32 @@ std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& ke
 }
 
 
-
-
 void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
-    if(auto group = getGroupId(key)) {
+    if (auto group = getGroupId(key)) {
         log::info("KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
         layer->spawnGroup(*group, false, 0, {}, 0, 0);
     }
 }
 
 void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
-    if(auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
+    if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
         log::info("[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
         layer->spawnGroup(group->second, false, 0, {}, 0, 0);
     }
 }
 
-
-MyBaseLayer::Fields::~Fields() {
-
-}
-
-$override
-bool MyBaseLayer::init() {
-    if (!GJBaseGameLayer::init()) return false;
+$override bool MyBaseLayer::init() {
+    if (!GJBaseGameLayer::init())
+        return false;
 
     scheduleOnce(schedule_selector(MyBaseLayer::delayedInit), 0);
     return true;
 }
 
-$override
-void MyBaseLayer::update(float dt)
-{
+$override void MyBaseLayer::update(float dt) {
     auto fields = m_fields.self();
-    //LOGI(fields->shouldRunUpdateLoop);
-    if(!isModActive()) {
+    // LOGI(fields->shouldRunUpdateLoop);
+    if (!isModActive()) {
         return GJBaseGameLayer::update(dt);
     }
 
@@ -123,66 +88,85 @@ void MyBaseLayer::update(float dt)
 
 void MyBaseLayer::delayedInit(float) {
 
-    if(m_isEditor) {
-        schedule(schedule_selector(MyBaseLayer::editorActiveHandlerLoop), 0);
-        return;
+    if (!m_isEditor) {
+        return scheduleOnce(schedule_selector(MyBaseLayer::setupKeybinds_step0), 0);
     }
 
+    for (auto obj : CCArrayExt<GameObject*>(m_objects)) {
+        if (obj->m_objectID != 914)
+            continue;
+
+        auto text = static_cast<TextGameObject*>(obj)->m_text;
+
+        if (!foundOldFormatString(text))
+            continue;
+
+        auto popup = geode::createQuickPopup(
+                "Old Input Format Detected",
+                "<cr>MAKE A BACKUP OF THE LEVEL BEFORE CONVERTING! THIS PROCESS IS NOT REVERSIBLE!</c>\nThe input "
+                "trigger data belongs to an older version and needs to be <cg>converted</c> to work,  <co> Convert all "
+                "input triggres to new format?</c>",
+                "Convert", "Cancel",
+                [this](FLAlertLayer* layer, bool btn2) {
+                    for (auto obj : CCArrayExt<GameObject*>(m_objects)) {
+                        if (obj->m_objectID != 914)
+                            continue;
+                        auto label = static_cast<TextGameObject*>(obj);
+                        auto text = label->m_text;
+                        if (auto reuslt = scn::scan<std::string, int>(text, "inf_inp:{} = {}")) {
+                            auto& [key, group] = reuslt->values();
+                            label->updateTextObject(fmt::format("inf_inp:2 {} {}", key, group), false);
+                        }
+                        if (auto result = scn::scan<std::string, char, int>(text, "inf_inp:{} {} = {}")) {
+                            auto& [key, keyDown, group] = result->values();
+                            label->updateTextObject(fmt::format("inf_inp:1 {} {} {}", key, keyDown, group), false);
+                        }
+                    }
+                },
+                false, true);
+
+        popup->m_scene = this;
+        popup->show();
 
 
-    scheduleOnce(schedule_selector(MyBaseLayer::setupKeybinds_step0), 0);
+        break;
+    }
 
-    //start directly in playlayer
+    schedule(schedule_selector(MyBaseLayer::editorActiveHandlerLoop), 0);
 }
 
 
 void MyBaseLayer::editorActiveHandlerLoop(float) {
+
     auto fields = m_fields.self();
+
+
     auto editor = reinterpret_cast<LevelEditorLayer*>(this);
     bool inPlaytest = m_playbackMode == PlaybackMode::Playing;
 
-    if(!fields->active && inPlaytest) {
+    // start playtest
+    if (!fields->active && inPlaytest) {
         fields->active = true;
         setupKeybinds_step0(0);
     }
-    else if(fields->active && !inPlaytest) {
-        fields->active = false;
-        fields->clear();
+    // stop playtest
+    else if (fields->active && !inPlaytest) {
+        log::info("stop playtest?");
+        // default values of all fields again (cleared)
+        *fields = MyBaseLayer::Fields();
     }
 }
 
-// void MyBaseLayer::handleClick(alpha::dispatcher::TouchEvent* touch, bool down) {
-//     LevelKeys btn = AlphaMouseButtonToLevelKeys(touch->getButton());
-//     log::info("{} {}", enchantum::to_string(touch->getButton()), enchantum::to_string(btn));
-//     nh_handleKeypress(btn, down);
-// }
-
 void MyBaseLayer::updateLoop(float) {
-//     auto kb = CCDirector::get()->getKeyboardDispatcher();
     auto fields = m_fields.self();
-//     bool control = kb->getControlKeyPressed();
-//     if(control != fields->controlPressed) {
-//         fields->controlPressed = control;
-//         nh_handleKeypress(LevelKeys::leftCtrl, control);
-//     }
-//     bool shift = kb->getShiftKeyPressed();
-//     if(shift != fields->shiftPressed) {
-//         fields->shiftPressed = shift;
-//         nh_handleKeypress(LevelKeys::leftShift, shift);
-//     }
-//     bool alt = kb->getAltKeyPressed();
-//     if(alt != fields->altPressed) {
-//         fields->altPressed = alt;
-//         nh_handleKeypress(LevelKeys::leftAlt, alt);
-//     }
 
-    for(const auto& o : fields->cursorFollowObjects) {
-        //LOGI(o->m_objectID, o->m_isUIObject, o->getRealPosition());
+    for (const auto& o : fields->cursorFollowObjects) {
+        // LOGI(o->m_objectID, o->m_isUIObject, o->getRealPosition());
 
         CCPoint layerObjPos;
         CCPoint layerMousePos;
 
-        if(o->m_isUIObject) {
+        if (o->m_isUIObject) {
             layerObjPos = o->getRealPosition();
             layerMousePos = getMousePos();
         } else {
@@ -204,7 +188,7 @@ void MyBaseLayer::resetLevelVariables() {
     GJBaseGameLayer::resetLevelVariables();
     log::info("resetting");
 
-    for(const auto& o : m_fields->cursorFollowObjects) {
+    for (const auto& o : m_fields->cursorFollowObjects) {
         o->setLastPosition(o->getPosition());
     }
 }
@@ -218,49 +202,44 @@ void MyBaseLayer::setupCursorGroup(int cursorGroupId) {
     log::info("SETTING UP CURSOR GROUP {}", cursorGroupId);
     m_fields->cursorFollowGroupId = cursorGroupId;
     m_fields->cursorFollowObjects.clear();
-    for(const auto& o : CCArrayExt<GameObject*>(m_objects)) {
-        if(hasGroup(o, cursorGroupId)) {
+    for (const auto& o : CCArrayExt<GameObject*>(m_objects)) {
+        if (hasGroup(o, cursorGroupId)) {
             m_fields->cursorFollowObjects.push_back(o);
         }
     }
 }
 
-//true if correctly registered atleast one keybind
+// true if correctly registered atleast one keybind
 bool MyBaseLayer::setupTextLabelKeys_step1() {
     auto fields = m_fields.self();
 
-    //parse all labels
-    for(const auto& obj : m_objects->asExt<GameObject*>()) {
-        if(obj->m_objectID == 914) {
-            if(auto parsed = parseObjectString(static_cast<TextGameObject*>(obj)->m_text)) {
-                if(KeyAction* label = std::get_if<KeyAction>(&*parsed)) {
+    // parse all labels
+    for (const auto& obj : m_objects->asExt<GameObject*>()) {
+        if (obj->m_objectID == 914) {
+            std::string_view t = static_cast<TextGameObject*>(obj)->m_text;
+            if (auto parsed = parseObjectString(t)) {
+                if (KeyAction* label = std::get_if<KeyAction>(&*parsed)) {
                     fields->keyMap.emplace(Fields::KeyActionMapKey{label->key, label->keyDown}, label->group);
-                }
-                else if(SimpleKeyAction* label = std::get_if<SimpleKeyAction>(&*parsed)) {
+                } else if (SimpleKeyAction* label = std::get_if<SimpleKeyAction>(&*parsed)) {
                     fields->simpleKeyMap.emplace(label->key, label->group);
-                } 
-                else if(ClickAction* action = std::get_if<ClickAction>(&*parsed)) {
+                } else if (ClickAction* action = std::get_if<ClickAction>(&*parsed)) {
                     m_fields->clickActionAddQueue.push_back(std::move(*action));
                 }
-            }
-            else {
+            } else {
                 log::error("Failed to parse label: {}", static_cast<TextGameObject*>(obj)->m_text);
             }
         }
     }
 
-    for(const auto& obj : m_objects->asExt<EffectGameObject*>())
-    {
-        if(obj->m_objectID == 1816) {
-            for(const auto& clickaction : fields->clickActionAddQueue) {
-                if(clickaction.collisionBlockId == obj->m_itemID) {
+    for (const auto& obj : m_objects->asExt<EffectGameObject*>()) {
+        if (obj->m_objectID == 1816) {
+            for (const auto& clickaction : fields->clickActionAddQueue) {
+                if (clickaction.collisionBlockId == obj->m_itemID) {
                     fields->clickActionObjects.emplace_back(obj, std::move(clickaction));
                 }
             }
         }
     }
-
-
 
 
     log::info("Added {} down keys", fields->keyMap.size());
@@ -270,31 +249,33 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     log::info("Wheel Up Group: {}", fields->wheelUpGroup);
     log::info("Wheel Down Group: {}", fields->wheelDownGroup);
 
-    fields->addedAtleastOneKey = !fields->keyMap.empty()
-        || !fields->simpleKeyMap.empty()
-        || !fields->clickActionObjects.empty();
-        
+    fields->addedAtleastOneKey =
+            !fields->keyMap.empty() || !fields->simpleKeyMap.empty() || !fields->clickActionObjects.empty();
+
     return fields->addedAtleastOneKey;
 }
 
 bool MyBaseLayer::isModActive() {
-    if(!m_isEditor && !reinterpret_cast<PlayLayer*>(this)->m_started) {
+    if (!m_isEditor && !reinterpret_cast<PlayLayer*>(this)->m_started) {
         return false;
     }
     return m_fields->active;
 }
 
 void MyBaseLayer::setupKeybinds_step0(float) {
-    if(!setupTextLabelKeys_step1()) {
+    if (!setupTextLabelKeys_step1()) {
         log::error("not parsed any labels");
         return;
     }
+
+
     auto fields = m_fields.self();
+
     fields->layer = this;
 
 
-    //TODO: create setup late actions
-    if(fields->cursorFollowGroupId != -1) {
+    // TODO: create setup late actions
+    if (fields->cursorFollowGroupId != -1) {
         setupCursorGroup(fields->cursorFollowGroupId);
     }
 
@@ -302,9 +283,9 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 }
 
 
-
 void MyBaseLayer::handleScroll(float x, float y) {
-    if(y == 0) return;
+    if (y == 0)
+        return;
     m_fields->spawnGroupSimple(y > 0 ? LevelKeys::wheelUp : LevelKeys::wheelDown);
 }
 
@@ -313,25 +294,6 @@ void MyBaseLayer::nh_handleKeypress(LevelKeys key, bool down) {
     m_fields->spawnGroupKeys({key, down});
 }
 
-// bool MyClickDelegate::clickBegan(alpha::dispatcher::TouchEvent *touch) {
-//     auto bl = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get());
-//     if(!bl->isModActive()) return false;
-//     log::debug("click began {}", enchantum::to_string(touch->getButton()));
-//     bl->handleClick(touch, true);
-//     return true;
-// }
-
-// void MyClickDelegate::clickEnded(alpha::dispatcher::TouchEvent* touch) {
-//     log::debug("click ended {}", enchantum::to_string(touch->getButton()));
-//     reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get())->handleClick(touch, false);
-// }
-
-// void MyScrollDelegate::scroll(float x, float y) {
-//     auto bl = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get());
-//     if(!bl->isModActive()) return;
-//     log::info("scroll {}, {}", x, y);
-//     bl->handleScroll(x, y);
-// }
 
 cocos2d::CCPoint MyBaseLayer::screenToGame(const cocos2d::CCPoint& screenPos) {
     auto cameraPos = m_gameState.m_cameraPosition;
