@@ -70,8 +70,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         /*SPECIAL ONLY ONE GROUP ID!!!*/
         int cursorFollowGroupId = -1;
-        int wheelUpGroup = -1;
-        int wheelDownGroup = -1;
+
 
         void addKeyBind(LevelKeys key, bool down, int groupId);
         void addClickAction(EffectGameObject* collision, ClickAction action);
@@ -108,7 +107,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     void setupText(std::string_view t);
 
     // TODO: unify all of this
-    void setupCursorGroup(int cursorGroupId);
+    void setupCursorGroup();
 
     // true if correctly registered (TODO: or will register) atleast one keybind
     bool setupTextLabelKeys_step1();

@@ -198,13 +198,20 @@ void MyBaseLayer::setupLevelStart(LevelSettingsObject* p0) {
     m_fields->spawnedModLoaded = false;
 }
 
-void MyBaseLayer::setupCursorGroup(int cursorGroupId) {
+void MyBaseLayer::setupCursorGroup() {
+    auto fields = m_fields.self();
+
+    auto it = fields->simpleKeyMap.find(LevelKeys::cursor);
+    if(it == fields->simpleKeyMap.end()) return;
+    int cursorGroupId = it->second;
+
+
     log::info("SETTING UP CURSOR GROUP {}", cursorGroupId);
-    m_fields->cursorFollowGroupId = cursorGroupId;
-    m_fields->cursorFollowObjects.clear();
+    fields->cursorFollowGroupId = cursorGroupId;
+    fields->cursorFollowObjects.clear();
     for (const auto& o : CCArrayExt<GameObject*>(m_objects)) {
         if (hasGroup(o, cursorGroupId)) {
-            m_fields->cursorFollowObjects.push_back(o);
+            fields->cursorFollowObjects.push_back(o);
         }
     }
 }
@@ -246,8 +253,8 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     log::info("Added {} simple keys", fields->simpleKeyMap.size());
     log::info("Button Objects: {}", fields->clickActionObjects.size());
     log::info("Cursor Group: {}", fields->cursorFollowGroupId);
-    log::info("Wheel Up Group: {}", fields->wheelUpGroup);
-    log::info("Wheel Down Group: {}", fields->wheelDownGroup);
+    //log::info("Wheel Up Group: {}", fields->wheelUpGroup);
+    //log::info("Wheel Down Group: {}", fields->wheelDownGroup);
 
     fields->addedAtleastOneKey =
             !fields->keyMap.empty() || !fields->simpleKeyMap.empty() || !fields->clickActionObjects.empty();
@@ -273,11 +280,8 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 
     fields->layer = this;
 
+    setupCursorGroup();
 
-    // TODO: create setup late actions
-    if (fields->cursorFollowGroupId != -1) {
-        setupCursorGroup(fields->cursorFollowGroupId);
-    }
 
     fields->active = true;
 }
