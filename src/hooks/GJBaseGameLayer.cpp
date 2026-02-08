@@ -54,14 +54,14 @@ std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& ke
 void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
     if (auto group = getGroupId(key)) {
         log::info("KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
-        layer->spawnGroup(*group, false, 0, {}, 0, 0);
+        layer->spawnGroup(*group, false, 0, gd::vector<int>(), 0, 0);
     }
 }
 
 void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
     if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
         log::info("[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
-        layer->spawnGroup(group->second, false, 0, {}, 0, 0);
+        layer->spawnGroup(group->second, false, 0, gd::vector<int>(), 0, 0);
     }
 }
 
@@ -112,7 +112,7 @@ void MyBaseLayer::delayedInit(float) {
                         if (obj->m_objectID != 914)
                             continue;
                         auto label = static_cast<TextGameObject*>(obj);
-                        auto text = label->m_text;
+                        std::string text = label->m_text.c_str();
                         if (auto reuslt = scn::scan<std::string, int>(text, "inf_inp:{} = {}")) {
                             auto& [key, group] = reuslt->values();
                             label->updateTextObject(fmt::format("inf_inp:2 {} {}", key, group), false);

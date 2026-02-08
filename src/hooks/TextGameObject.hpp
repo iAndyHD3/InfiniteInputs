@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Geode/c++stl/aliastl.hpp>
-#include <Geode/c++stl/string.hpp>
 #include <Geode/modify/Modify.hpp>
 #include <Geode/modify/TextGameObject.hpp>
 
