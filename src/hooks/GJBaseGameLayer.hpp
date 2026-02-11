@@ -22,6 +22,7 @@
 using namespace geode::prelude;
 
 using groupId = int;
+using CollisionBlock = EffectGameObject;
 
 // struct MyClickDelegate : public CCNode, alpha::dispatcher::TouchDelegate {
 //     bool clickBegan(alpha::dispatcher::TouchEvent* touch) override;
@@ -32,52 +33,67 @@ using groupId = int;
 //     void scroll(float x, float y) override;
 // };
 
+struct KeyActionMapKey {
+    LevelKeys key;
+    bool keyDown;
+    bool operator==(const KeyActionMapKey& other) const { return key == other.key && keyDown == other.keyDown; }
+};
+
+namespace std {
+    template <> struct hash<ClickAction> {
+        std::size_t operator()(const ClickAction& k) const {
+            auto hasher = std::hash<int>();
+            return hasher(k.collisionBlockId) ^ hasher(k.groupIdCursorEnter) ^ hasher(k.groupIdCursorExit) ^ hasher(k.groupIdCursorUp);
+        }
+    };
+
+    template <> struct hash<KeyActionMapKey> {
+        std::size_t operator()(const KeyActionMapKey& k) const {
+            return std::hash<LevelKeys>()(k.key) ^ std::hash<bool>()(k.keyDown);
+        }
+    };
+}
+
+struct ClickActionData {
+    CollisionBlock* collblock = nullptr;
+    ClickAction action;
+    bool taken = false;
+    bool calledEnter = true;
+    bool calledExit = false;
+};
 
 class $modify(MyBaseLayer, GJBaseGameLayer) {
+    using GJBaseGameLayer::spawnGroup;
     struct Fields {
 
-        struct KeyActionMapKey {
-            LevelKeys key;
-            bool keyDown;
-
-            bool operator==(const KeyActionMapKey& other) const { return key == other.key && keyDown == other.keyDown; }
-        };
-
-        struct KeyActionMapKeyHash {
-            std::size_t operator()(const KeyActionMapKey& k) const {
-                return std::hash<LevelKeys>()(k.key) ^ std::hash<bool>()(k.keyDown);
-            }
-        };
-
-        std::unordered_map<KeyActionMapKey, groupId, KeyActionMapKeyHash> keyMap;
+        std::unordered_map<KeyActionMapKey, groupId> keyMap;
 
         // SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow
         std::unordered_map<LevelKeys, groupId> simpleKeyMap;
 
-        std::vector<std::pair<GameObject*, ClickAction>> clickActionObjects;
-
         // only used as queue during initialization
-        std::vector<ClickAction> clickActionAddQueue;
+        std::vector<ClickActionData> clickActions;
 
         bool spawnedModLoaded = false;
         bool active = false;
         bool addedAtleastOneKey = false;
         bool oldFormatFound = false;
 
-        GJBaseGameLayer* layer = nullptr;
+        MyBaseLayer* layer = nullptr;
 
         std::vector<GameObject*> cursorFollowObjects;
 
         /*SPECIAL ONLY ONE GROUP ID!!!*/
         int cursorFollowGroupId = -1;
 
+        std::vector<ClickAction> clickActionAddQueue;
+
 
         void addKeyBind(LevelKeys key, bool down, int groupId);
-        void addClickAction(EffectGameObject* collision, ClickAction action);
+        void addClickAction(CollisionBlock* collision, ClickAction action);
 
         // TODO: unify this with overloads or something
         std::optional<groupId> getGroupId(const KeyActionMapKey&);
-
 
         void spawnGroupKeys(const KeyActionMapKey&);
         void spawnGroupSimple(LevelKeys key);
@@ -122,4 +138,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     void nh_handleKeypress(LevelKeys key, bool down);
 
     cocos2d::CCPoint screenToGame(const cocos2d::CCPoint& screenPos);
+
+    void spawnGroup(groupId id);
+
 };

@@ -16,6 +16,8 @@ struct ClickAction {
     int groupIdCursorExit;
     int groupIdCursorDown;
     int groupIdCursorUp;
+    bool stealTouches;
+    bool allowStealFrom;
 };
 
 struct SimpleKeyAction {
@@ -39,4 +41,4 @@ std::optional<SimpleKeyAction> getSimpleKeyActionFromLabel(std::string_view t);
 std::optional<II_ObjectAction> parseObjectString(std::string_view t);
 
 
-bool foundOldFormatString(std::string_view t);
+bool isOldFormatString(std::string_view t);

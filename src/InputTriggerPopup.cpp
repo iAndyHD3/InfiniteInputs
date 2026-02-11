@@ -383,8 +383,9 @@ InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::
     if (labelOverride.empty()) {
         keyStr = std::string(fixKeyName(enchantum::to_string(key)));
         utils::string::toUpperIP(keyStr);
-    } else
+    } else {
         keyStr = labelOverride;
+    }
 
     auto keyLabelOn = CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
     keyLabelOn->setScale(0.5f);

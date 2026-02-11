@@ -2,10 +2,10 @@
 #include <Geode/modify/Modify.hpp>
 #include <Geode/utils/casts.hpp>
 #include <Geode/utils/string.hpp>
+#include <cstdint>
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
 #include <scn/scan.h>
-#include "Geode/loader/Log.hpp"
 #include "LevelKeys.hpp"
 
 
@@ -63,7 +63,7 @@ std::optional<KeyAction> getParsedKeyAction(std::string_view t) {
     return std::nullopt;
 }
 
-bool foundOldFormatString(std::string_view t) {
+bool isOldFormatString(std::string_view t) {
     return scn::scan<std::string, int>(t, "inf_inp:{} = {}").has_value() ||
            scn::scan<std::string, char, int>(t, "inf_inp:{} {} = {}").has_value();
 }
@@ -71,15 +71,16 @@ bool foundOldFormatString(std::string_view t) {
 std::string getLabelFromClickAction(const ClickAction& t) {
     return fmt::format(
             "inf_inp:3 {} {} {} {} {}", t.collisionBlockId, t.groupIdCursorEnter, t.groupIdCursorExit,
-            t.groupIdCursorDown, t.groupIdCursorUp);
+            t.groupIdCursorDown, t.groupIdCursorUp, static_cast<uint8_t>(t.stealTouches), static_cast<uint8_t>(t.allowStealFrom));
 }
 
 
 std::optional<ClickAction> getClickActionFromLabel(std::string_view t) {
-    if (auto result = scn::scan<int, int, int, int, int>(t, "inf_inp:3 {} {} {} {} {}")) {
-        auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp] =
-                result->values();
-        return ClickAction{collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp};
+    if (auto result = scn::scan<int, int, int, int, int, int, int>(t, "inf_inp:3 {} {} {} {} {} {} {}")) {
+        auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
+               stealTouches, allowStealFrom] = result->values();
+
+        return ClickAction{collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp, static_cast<bool>(stealTouches), static_cast<bool>(allowStealFrom)};
     }
     return std::nullopt;
 }

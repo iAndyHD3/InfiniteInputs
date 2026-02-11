@@ -39,10 +39,6 @@ void MyBaseLayer::Fields::addKeyBind(LevelKeys key, bool down, int groupId) {
     // getKeysMap(down).emplace(key, groupId);
 }
 
-void MyBaseLayer::Fields::addClickAction(EffectGameObject* collision, ClickAction action) {
-    clickActionObjects.push_back({collision, std::move(action)});
-    addedAtleastOneKey = true;
-}
 
 
 std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& key) {
@@ -54,14 +50,14 @@ std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& ke
 void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
     if (auto group = getGroupId(key)) {
         log::info("KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
-        layer->spawnGroup(*group, false, 0, gd::vector<int>(), 0, 0);
+        layer->spawnGroup(*group);
     }
 }
 
 void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
     if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
         log::info("[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
-        layer->spawnGroup(group->second, false, 0, gd::vector<int>(), 0, 0);
+        layer->spawnGroup(group->second);
     }
 }
 
@@ -98,7 +94,7 @@ void MyBaseLayer::delayedInit(float) {
 
         auto text = static_cast<TextGameObject*>(obj)->m_text;
 
-        if (!foundOldFormatString(text))
+        if (!isOldFormatString(text))
             continue;
 
         auto popup = geode::createQuickPopup(
@@ -127,7 +123,6 @@ void MyBaseLayer::delayedInit(float) {
 
         popup->m_scene = this;
         popup->show();
-
 
         break;
     }
@@ -179,7 +174,7 @@ void MyBaseLayer::updateLoop(float) {
     }
 
     if (!fields->spawnedModLoaded) {
-        fields->spawnGroupKeys({LevelKeys::modLoaded, false});
+        fields->spawnGroupSimple(LevelKeys::modLoaded);
         fields->spawnedModLoaded = true;
     }
 }
@@ -226,7 +221,7 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
             std::string_view t = static_cast<TextGameObject*>(obj)->m_text;
             if (auto parsed = parseObjectString(t)) {
                 if (KeyAction* label = std::get_if<KeyAction>(&*parsed)) {
-                    fields->keyMap.emplace(Fields::KeyActionMapKey{label->key, label->keyDown}, label->group);
+                    fields->keyMap.emplace(KeyActionMapKey{label->key, label->keyDown}, label->group);
                 } else if (SimpleKeyAction* label = std::get_if<SimpleKeyAction>(&*parsed)) {
                     fields->simpleKeyMap.emplace(label->key, label->group);
                 } else if (ClickAction* action = std::get_if<ClickAction>(&*parsed)) {
@@ -238,26 +233,29 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
         }
     }
 
-    for (const auto& obj : m_objects->asExt<EffectGameObject*>()) {
+    for (const auto& obj : m_objects->asExt<CollisionBlock*>()) {
         if (obj->m_objectID == 1816) {
             for (const auto& clickaction : fields->clickActionAddQueue) {
                 if (clickaction.collisionBlockId == obj->m_itemID) {
-                    fields->clickActionObjects.emplace_back(obj, std::move(clickaction));
+                    log::info("{}", obj);
+                    fields->clickActions.emplace_back(obj, std::move(clickaction));
                 }
             }
         }
     }
+    fields->clickActionAddQueue.clear();
 
 
     log::info("Added {} down keys", fields->keyMap.size());
     log::info("Added {} simple keys", fields->simpleKeyMap.size());
-    log::info("Button Objects: {}", fields->clickActionObjects.size());
+    log::info("Added {} click keys", fields->clickActions.size());
+    log::info("Button Objects: {}", fields->clickActions.size());
     log::info("Cursor Group: {}", fields->cursorFollowGroupId);
     //log::info("Wheel Up Group: {}", fields->wheelUpGroup);
     //log::info("Wheel Down Group: {}", fields->wheelDownGroup);
 
     fields->addedAtleastOneKey =
-            !fields->keyMap.empty() || !fields->simpleKeyMap.empty() || !fields->clickActionObjects.empty();
+            !fields->keyMap.empty() || !fields->simpleKeyMap.empty() || !fields->clickActions.empty();
 
     return fields->addedAtleastOneKey;
 }
@@ -320,4 +318,10 @@ cocos2d::CCPoint MyBaseLayer::screenToGame(const cocos2d::CCPoint& screenPos) {
     // Add the camera position
     auto point = ccp(cameraPos.x + scaledPos.x, cameraPos.y + scaledPos.y);
     return point;
+}
+
+
+void MyBaseLayer::spawnGroup(groupId id) {
+    log::info("spawn group: {}", id);
+    GJBaseGameLayer::spawnGroup(id, false, 0, gd::vector<int>(), 0, 0);
 }

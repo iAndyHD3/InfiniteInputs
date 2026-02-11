@@ -5,7 +5,6 @@
 #include <Geode/binding/EditorUI.hpp>
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/TextGameObject.hpp>
-#include "../InputTriggerPopup.hpp"
 #include "Geode/loader/Mod.hpp"
 #include "Geode/utils/cocos.hpp"
 
