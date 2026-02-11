@@ -10,18 +10,8 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 project(YetMoreEditorTools VERSION 1.0.0)
 
-
-set(MACOS_SOURCES "")
-if (APPLE)
-  enable_language(OBJCXX)
-  if (NOT IOS)
-  set(MACOS_SOURCES src/macos.mm)
-  endif()
-endif()
-
-
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
-add_library(${PROJECT_NAME} SHARED ${SOURCES} ${MACOS_SOURCES})
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 if (NOT DEFINED ENV{GEODE_SDK})
     message(FATAL_ERROR "Unable to find Geode SDK! Please define GEODE_SDK environment variable to point to Geode")
