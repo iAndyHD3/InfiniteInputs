@@ -8,6 +8,9 @@ struct KeyAction {
     LevelKeys key;
     bool keyDown;
     int group;
+
+    static std::optional<KeyAction> parse(std::string_view text);
+    std::string getLabel();
 };
 
 struct ClickAction {
@@ -18,25 +21,20 @@ struct ClickAction {
     int groupIdCursorUp;
     bool stealTouches;
     bool allowStealFrom;
+
+    static std::optional<ClickAction> parse(std::string_view text);
+    std::string getLabel();
 };
 
 struct SimpleKeyAction {
     LevelKeys key;
     int group;
+
+    static std::optional<SimpleKeyAction> parse(std::string_view text);
+    std::string getLabel();
 };
 
 using II_ObjectAction = std::variant<KeyAction, SimpleKeyAction, ClickAction>;
-
-
-std::string getLabelFromKeyAction(const KeyAction& t);
-std::optional<KeyAction> getParsedKeyAction(std::string_view t);
-
-std::string getLabelFromClickAction(const ClickAction& t);
-std::optional<ClickAction> getClickActionFromLabel(std::string_view t);
-
-std::string getLabelFromSimpleKeyAction(const SimpleKeyAction& t);
-std::optional<SimpleKeyAction> getSimpleKeyActionFromLabel(std::string_view t);
-
 
 std::optional<II_ObjectAction> parseObjectString(std::string_view t);
 

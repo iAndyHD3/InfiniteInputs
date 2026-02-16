@@ -7,6 +7,7 @@
 #include <Geode/binding/TextGameObject.hpp>
 #include "Geode/loader/Mod.hpp"
 #include "Geode/utils/cocos.hpp"
+#include "InputTriggerPopup.hpp"
 
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
@@ -114,26 +115,13 @@ void MyEditorUI::editObject(cocos2d::CCObject* sender) {
         return EditorUI::editObject(sender);
     }
 
-    std::vector<Ref<GameObject>> selectedObjects;
-    if (m_selectedObject)
-        selectedObjects.push_back(m_selectedObject);
-    if (m_selectedObjects) {
-        auto arr = CCArrayExt<GameObject*>(m_selectedObjects);
-        selectedObjects.insert(selectedObjects.end(), arr.begin(), arr.end());
+    if(!m_selectedObject) {
+        return EditorUI::editObject(sender);
     }
 
-    if (selectedObjects.size() == 0)
-        return EditorUI::editObject(sender);
-
-    int objectID = selectedObjects[0]->m_objectID;
-    if (objectID != 914)
-        return EditorUI::editObject(sender);
-
-    if (selectedObjects.size() > 1) {
-        for (auto obj : selectedObjects) {
-            if (obj->m_objectID != objectID) {
-                return EditorUI::editObject(sender);
-            }
-        }
+    if(m_selectedObject->m_objectID == 914) {
+        return InputTriggerPopup::create(static_cast<TextGameObject*>(m_selectedObject))->show();
     }
+
+    EditorUI::editObject(sender);
 }

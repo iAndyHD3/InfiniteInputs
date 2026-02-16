@@ -1,16 +1,20 @@
 #include "InputTriggerPopup.hpp"
 #include <Geode/Geode.hpp>
+#include <Geode/binding/TextGameObject.hpp>
 #include <algorithm>
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
+#include "Geode/cocos/cocoa/CCGeometry.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/ui/Popup.hpp"
-
+#include "Geode/utils/ZStringView.hpp"
+#include "TextParsing.hpp"
 
 using namespace geode::prelude;
 
-InputTriggerPopup* InputTriggerPopup::create(std::vector<geode::Ref<GameObject>> objects) {
+InputTriggerPopup* InputTriggerPopup::create(TextGameObject* object) {
     auto ret = new InputTriggerPopup();
-    if (ret && ret->init(objects)) {
+    if (ret && ret->init(object)) {
         ret->autorelease();
         return ret;
     }
@@ -19,13 +23,15 @@ InputTriggerPopup* InputTriggerPopup::create(std::vector<geode::Ref<GameObject>>
 }
 
 
-bool InputTriggerPopup::init(std::vector<geode::Ref<GameObject>> objects) {
-
+bool InputTriggerPopup::init(TextGameObject* object) {
     if (!Popup::init(440.f, 310.f)) {
         return false;
     }
+
+    log::info("text: {}", object->m_text);
+
     m_noElasticity = true;
-    m_objects = objects;
+    m_object = object;
     m_closeBtn->removeFromParent();
 
     auto title = CCLabelBMFont::create("Input Settings", "bigFont.fnt");
@@ -60,104 +66,6 @@ bool InputTriggerPopup::init(std::vector<geode::Ref<GameObject>> objects) {
 
     m_buttonMenu->addChild(okBtn);
 
-    auto groupInputContainer = CCNode::create();
-    groupInputContainer->setAnchorPoint({0, 0});
-    groupInputContainer->ignoreAnchorPointForPosition(false);
-    groupInputContainer->setContentSize({100, 60});
-    groupInputContainer->setPosition({50, 20});
-    groupInputContainer->setID("group-input-container");
-
-    auto groupInputBG = CCScale9Sprite::create("square02_small.png");
-    groupInputBG->setScale(0.8f);
-    groupInputBG->setContentSize({70, 30});
-    groupInputBG->setZOrder(-1);
-    groupInputBG->setOpacity(100);
-    groupInputBG->setID("group-input-background");
-
-    groupInputContainer->addChild(groupInputBG);
-
-    auto groupInputLabel = CCLabelBMFont::create("Group ID:", "goldFont.fnt");
-    groupInputLabel->setScale(0.56f);
-    groupInputLabel->setAnchorPoint({0.5f, 0.f});
-    groupInputLabel->setID("group-input-label");
-
-    groupInputContainer->addChild(groupInputLabel);
-
-    m_groupInput = geode::TextInput::create(48, "Num");
-    m_groupInput->setCallback([this](const std::string& str) {
-        auto numRes = geode::utils::numFromString<int>(str);
-        m_label.group = numRes.unwrapOrDefault();
-        m_modifiedGroup = true;
-    });
-    m_groupInput->setCommonFilter(geode::CommonFilter::Int);
-    m_groupInput->setMaxCharCount(4);
-    m_groupInput->hideBG();
-    m_groupInput->setID("group-input");
-
-    m_groupInput->setPosition({groupInputContainer->getContentWidth() * 0.5f, m_groupInput->getContentHeight() * 0.5f});
-    groupInputBG->setPosition(m_groupInput->getPosition());
-    groupInputLabel->setPosition(
-            {groupInputContainer->getContentWidth() * 0.5f,
-             m_groupInput->getPositionY() + m_groupInput->getContentHeight() * 0.5f + 5});
-
-    groupInputContainer->addChild(m_groupInput);
-
-    auto groupInputBounds = m_groupInput->boundingBox();
-
-    auto decrGroupBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
-            "edit_leftBtn_001.png", 1.f, [this](CCMenuItemSpriteExtra* self) {
-                m_label.group = std::clamp(m_label.group - 1, 0, 9999);
-                m_groupInput->setString(geode::utils::numToString(m_label.group));
-                m_modifiedGroup = true;
-            });
-
-    decrGroupBtn->setPosition({groupInputBounds.getMinX() - 25, m_groupInput->getPositionY()});
-    decrGroupBtn->setID("decrement-group-button");
-
-    auto incrGroupBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
-            "edit_rightBtn_001.png", 1.f, [this](CCMenuItemSpriteExtra* self) {
-                m_label.group = std::clamp(m_label.group + 1, 0, 9999);
-                m_groupInput->setString(geode::utils::numToString(m_label.group));
-                m_modifiedGroup = true;
-            });
-
-    incrGroupBtn->setPosition({groupInputBounds.getMaxX() + 25, m_groupInput->getPositionY()});
-    incrGroupBtn->setID("increment-group-button");
-
-    auto groupMenu = CCMenu::create();
-    groupMenu->ignoreAnchorPointForPosition(false);
-    groupMenu->setAnchorPoint({0, 0});
-    groupMenu->setContentSize(groupInputContainer->getContentSize());
-    groupMenu->setPosition({0, 0});
-    groupMenu->setID("group-input-menu");
-
-    groupInputContainer->addChild(groupMenu);
-
-    groupMenu->addChild(decrGroupBtn);
-    groupMenu->addChild(incrGroupBtn);
-
-    m_mainLayer->addChild(groupInputContainer);
-
-    m_onReleaseToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
-        m_label.keyDown = toggler->isToggled();
-        m_modifiedRelease = true;
-    });
-
-    m_onReleaseToggle->setPosition({m_mainLayer->getContentWidth() - 120, 55});
-    m_onReleaseToggle->setID("on-release-toggle");
-
-    m_buttonMenu->addChild(m_onReleaseToggle);
-
-    m_onReleaseLabel = CCLabelBMFont::create("Trigger On\nRelease", "bigFont.fnt");
-    m_onReleaseLabel->setScale(0.35f);
-    m_onReleaseLabel->setAnchorPoint({0.f, 0.5f});
-    m_onReleaseLabel->setPosition(
-            {m_onReleaseToggle->getPositionX() + m_onReleaseToggle->getContentWidth() * 0.5f + 10,
-             m_onReleaseToggle->getPositionY()});
-    m_onReleaseLabel->setID("on-release-label");
-
-    m_mainLayer->addChild(m_onReleaseLabel);
-
     auto tabsMenu = CCMenu::create();
     tabsMenu->ignoreAnchorPointForPosition(false);
     tabsMenu->setAnchorPoint({0.5f, 1.f});
@@ -171,110 +79,85 @@ bool InputTriggerPopup::init(std::vector<geode::Ref<GameObject>> objects) {
 
     m_mainLayer->addChild(tabsMenu);
 
-    tabsMenu->addChild(createTabToggler("Keyboard", 0));
-    tabsMenu->addChild(createTabToggler("Mouse", 1));
+    tabsMenu->addChild(createTabToggler("Keyboard", Tab::Keyboard));
+    tabsMenu->addChild(createTabToggler("Mouse", Tab::Mouse));
+    tabsMenu->addChild(createTabToggler("Touch", Tab::Touch));
 
     tabsMenu->updateLayout();
 
-    m_onModLoadedToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
-        for (const auto& [toggle, tab] : m_toggles) {
-            if (toggle == toggler)
-                continue;
-            toggle->toggle(false);
-        }
-        m_label.key = !toggler->isToggled() ? LevelKeys::modLoaded : LevelKeys::empty;
-        m_modifiedKey = true;
-    });
-
-    m_onModLoadedToggle->setPosition({m_mainLayer->getContentWidth() - 120, 25});
-
-    m_onModLoadedToggle->setUserObject("key"_spr, ObjWrapper<LevelKeys>::create(LevelKeys::modLoaded));
-    m_onModLoadedToggle->setID("on-mod-loaded-toggle");
-    m_toggles[m_onModLoadedToggle] = 0;
-
-    m_buttonMenu->addChild(m_onModLoadedToggle);
-
-    auto onModLoadedLabel = CCLabelBMFont::create("On Mod\nLoaded", "bigFont.fnt");
-    onModLoadedLabel->setScale(0.35f);
-    onModLoadedLabel->setAnchorPoint({0.f, 0.5f});
-    onModLoadedLabel->setPosition(
-            {m_onModLoadedToggle->getPositionX() + m_onModLoadedToggle->getContentWidth() * 0.5f + 10,
-             m_onModLoadedToggle->getPositionY()});
-    onModLoadedLabel->setID("on-mod-loaded-label");
-
-    m_mainLayer->addChild(onModLoadedLabel);
-
     setupKeyboardTab();
     setupMouseTab();
+    setupTouchTab();
 
-    for (const auto& tab : m_tabs) {
-        tab->setVisible(false);
+    reaction::action([this](){
+        Tab toggledTab = m_currentActionTab();
+        log::info("tab: {}", (int)toggledTab);
+        for(const auto& [tabEnum, data] : m_tabData) {
+            //ADD NODES AND HIDE!!!!!!!!!!
+            log::info("{}", data.common.nodeContainer);
+            data.common.nodeContainer->setVisible(false);
+            if(toggledTab != tabEnum) {
+                data.common.toggler->toggle(false);
+                data.common.toggler->setEnabled(true);
+            }
+        }
+        m_tabData[toggledTab].common.nodeContainer->setVisible(true);
+
+        auto& toggler = m_tabData[toggledTab].common.toggler;
+        log::info("clickable false on: {}", toggler);
+        toggler->setEnabled(false);
+        toggler->toggle(true);
+    });
+
+    if (auto parsed = KeyAction::parse(object->m_text)) {
+        m_tabData[Tab::Keyboard].specific = KeyboardTabData{.m_keyAction = std::move(*parsed)};
+        m_currentActionTab.value(Tab::Keyboard);
+    } else if (auto parsed = SimpleKeyAction::parse(object->m_text)) {
+        m_tabData[Tab::Mouse].specific = MouseTabData{.m_simpleKeyAction = std::move(*parsed)};
+        m_currentActionTab.value(Tab::Mouse);
+    } else if (auto parsed = ClickAction::parse(object->m_text)) {
+        m_tabData[Tab::Touch].specific = TouchTabData{.m_clickAction = std::move(*parsed)};
+        m_currentActionTab.value(Tab::Touch);
+    }
+    else {
+        m_currentActionTab.value(Tab::Keyboard);
+        m_tabData[Tab::Keyboard].specific = KeyboardTabData{};
     }
 
-    setupValues();
+
+
+    // m_onModLoadedToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
+    //     // for (const auto& [toggle, tab] : m_toggles) {
+    //     //     if (toggle == toggler)
+    //     //         continue;
+    //     //     toggle->toggle(false);
+    //     // }
+    //     // m_label.key = !toggler->isToggled() ? LevelKeys::modLoaded : LevelKeys::empty;
+    //     // m_modifiedKey = true;
+    // });
+
+    // m_onModLoadedToggle->setPosition({m_mainLayer->getContentWidth() - 120, 25});
+
+    // m_onModLoadedToggle->setUserObject("key"_spr, ObjWrapper<LevelKeys>::create(LevelKeys::modLoaded));
+    // m_onModLoadedToggle->setID("on-mod-loaded-toggle");
+    // m_toggles[m_onModLoadedToggle] = 0;
+
+    // m_buttonMenu->addChild(m_onModLoadedToggle);
+
+    // auto onModLoadedLabel = CCLabelBMFont::create("On Mod\nLoaded", "bigFont.fnt");
+    // onModLoadedLabel->setScale(0.35f);
+    // onModLoadedLabel->setAnchorPoint({0.f, 0.5f});
+    // onModLoadedLabel->setPosition(
+    //         {m_onModLoadedToggle->getPositionX() + m_onModLoadedToggle->getContentWidth() * 0.5f + 10,
+    //          m_onModLoadedToggle->getPositionY()});
+    // onModLoadedLabel->setID("on-mod-loaded-label");
+
+    // m_mainLayer->addChild(onModLoadedLabel);
+
 
     return true;
 }
 
-void InputTriggerPopup::setupValues() {
-
-    auto parsed_opt = getParsedKeyAction(static_cast<TextGameObject*>(m_objects[0].data())->m_text);
-
-    if (parsed_opt) {
-        auto parsed = *parsed_opt;
-
-        bool mixedGroups = false;
-        bool mixedKey = false;
-        bool mixedKeyDown = false;
-        for (const auto& obj : m_objects) {
-            auto parsedObj_opt = getParsedKeyAction(static_cast<TextGameObject*>(obj.data())->m_text);
-            auto parsedObj = *parsedObj_opt;
-
-            if (parsed.group != parsedObj.group) {
-                mixedGroups = true;
-            }
-            if (parsed.key != parsedObj.key) {
-                mixedKey = true;
-            }
-            if (parsed.keyDown != parsedObj.keyDown) {
-                mixedKeyDown = true;
-            }
-        }
-        if (!mixedGroups) {
-            m_groupInput->setString(geode::utils::numToString(parsed.group));
-            m_label.group = parsed.group;
-        }
-
-        bool mainTab = true;
-
-        if (!mixedKey) {
-            m_label.key = parsed.key;
-            for (const auto& [toggle, tab] : m_toggles) {
-                auto key = static_cast<ObjWrapper<LevelKeys>*>(toggle->getUserObject("key"_spr));
-
-                if (key->getValue() == parsed.key) {
-                    toggle->toggle(true);
-                    m_tabs[tab]->setVisible(true);
-                    m_tabToggles[tab]->toggle(true);
-                    mainTab = false;
-                    break;
-                }
-            }
-        }
-
-        if (mainTab) {
-            m_tabs[0]->setVisible(true);
-            m_tabToggles[0]->toggle(true);
-        }
-
-        if (!mixedKeyDown) {
-            m_onReleaseToggle->toggle(!parsed.keyDown);
-            m_label.keyDown = parsed.keyDown;
-        }
-    }
-
-    checkSpecialKey();
-}
 
 CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKeys key) {
     auto checkboxContainer = CCNode::create();
@@ -287,16 +170,8 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
     checkboxMenu->setAnchorPoint({0.f, 0.5f});
     checkboxMenu->setID("checkbox-menu");
 
-    auto toggler = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this, key](CCMenuItemToggler* self) {
-        for (const auto& [toggle, tab] : m_toggles) {
-            if (toggle == self)
-                continue;
-            toggle->toggle(false);
-        }
-        m_label.key = !self->isToggled() ? key : LevelKeys::empty;
-        m_modifiedKey = true;
-        checkSpecialKey();
-    });
+    auto toggler = CCMenuItemExt::createTogglerWithStandardSprites(
+            0.7f, [this, key](CCMenuItemToggler* self) { log::info("mouse toggle"); });
 
 
     checkboxMenu->addChild(toggler);
@@ -322,12 +197,12 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
 
     toggler->setUserObject("key"_spr, ObjWrapper<LevelKeys>::create(key));
     toggler->setID(fmt::format("{}-toggle", enchantum::to_string(key)));
-    m_toggles[toggler] = 1;
+    
 
     return checkboxContainer;
 }
 
-CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label, int tab) {
+CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label, Tab tab) {
     auto onSpr = CCScale9Sprite::create("GJ_button_02.png");
     auto offSpr = CCScale9Sprite::create("GJ_button_04.png");
 
@@ -349,26 +224,12 @@ CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label,
 
     auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [this, tab](CCMenuItemToggler* self) {
         bool wasToggled = self->isToggled();
-
-        for (const auto& toggle : m_tabToggles) {
-            toggle->toggle(false);
-            self->setClickable(true);
-        }
-        for (const auto& tab : m_tabs) {
-            tab->setVisible(false);
-        }
-        m_tabs[tab]->setVisible(true);
-
-        if (!wasToggled) {
-            self->toggle(true);
-            self->setClickable(false);
-        }
+        m_currentActionTab.value(tab);
     });
 
     toggler->setID(fmt::format("{}-toggle", label));
 
-    m_tabToggles.push_back(toggler);
-
+    m_tabData[tab].common.toggler = toggler;
     return toggler;
 }
 
@@ -402,20 +263,20 @@ InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::
     offSpr->addChild(keyLabelOff);
 
     auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [this, key](CCMenuItemToggler* self) {
-        for (const auto& [toggle, tab] : m_toggles) {
-            if (toggle == self)
-                continue;
-            toggle->toggle(false);
-        }
-        m_label.key = !self->isToggled() ? key : LevelKeys::empty;
-        m_modifiedKey = true;
+        // for (const auto& [toggle, tab] : m_toggles) {
+        //     if (toggle == self)
+        //         continue;
+        //     toggle->toggle(false);
+        // }
+        // m_label.key = !self->isToggled() ? key : LevelKeys::empty;
+        // m_modifiedKey = true;
 
-        checkSpecialKey();
+        // checkSpecialKey();
+        log::info("toggler");
     });
 
     toggler->setUserObject("key"_spr, ObjWrapper<LevelKeys>::create(key));
     toggler->setID(fmt::format("{}-toggle", keyStr));
-    m_toggles[toggler] = 0;
 
     return toggler;
 }
@@ -437,12 +298,16 @@ CCMenu* InputTriggerPopup::createKeyboardMenu(float gap, float yOffset, int row)
 }
 
 void InputTriggerPopup::setupKeyboardTab() {
+
     auto keyboardContainer = CCNode::create();
     keyboardContainer->setContentSize(m_mainLayer->getContentSize());
     keyboardContainer->setAnchorPoint({0, 0});
     keyboardContainer->ignoreAnchorPointForPosition(false);
     keyboardContainer->setID("keyboard-container");
-    m_tabs.push_back(keyboardContainer);
+    m_tabData[Tab::Keyboard].common.nodeContainer = keyboardContainer;
+
+    auto& kbdata = getKeyboardData();
+    keyboardContainer->addChild(createIntegerInput("Group ID: ", &kbdata.m_keyAction.group, {50, 20}));
 
     auto row1Menu = createKeyboardMenu(2.f, 70, 1);
 
@@ -533,6 +398,31 @@ void InputTriggerPopup::setupKeyboardTab() {
     row6Menu->updateLayout();
     keyboardContainer->addChild(row6Menu);
 
+    auto m_onReleaseToggle = kbdata.m_onReleaseToggle;
+    m_onReleaseToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
+        // m_label.keyDown = toggler->isToggled();
+        // m_modifiedRelease = true;
+        log::info("release toggle");
+    });
+
+    m_onReleaseToggle->setPosition({m_mainLayer->getContentWidth() - 120, 55});
+    m_onReleaseToggle->setID("on-release-toggle");
+
+    
+    m_buttonMenu->addChild(m_onReleaseToggle);
+    keyboardContainer->addChild(m_onReleaseToggle);
+
+    auto m_onReleaseLabel = kbdata.m_onReleaseLabel;
+    m_onReleaseLabel = CCLabelBMFont::create("Trigger On\nRelease", "bigFont.fnt");
+    m_onReleaseLabel->setScale(0.35f);
+    m_onReleaseLabel->setAnchorPoint({0.f, 0.5f});
+    m_onReleaseLabel->setPosition(
+            {m_onReleaseToggle->getPositionX() + m_onReleaseToggle->getContentWidth() * 0.5f + 10,
+             m_onReleaseToggle->getPositionY()});
+    m_onReleaseLabel->setID("on-release-label");
+
+    keyboardContainer->addChild(m_onReleaseLabel);
+
     m_mainLayer->addChild(keyboardContainer);
 }
 
@@ -542,12 +432,12 @@ void InputTriggerPopup::setupMouseTab() {
     mouseContainer->setAnchorPoint({0.f, 0.f});
     mouseContainer->ignoreAnchorPointForPosition(false);
     mouseContainer->setID("mouse-container");
-    m_tabs.push_back(mouseContainer);
+    m_tabData[Tab::Mouse].common.nodeContainer = mouseContainer;
 
     auto innerContainer = CCNode::create();
     innerContainer->setAnchorPoint({0.5f, 1.f});
     innerContainer->ignoreAnchorPointForPosition(false);
-    innerContainer->setPosition({m_mainLayer->getContentWidth() * 0.5f, m_mainLayer->getContentHeight() - 90.f});
+    innerContainer->setPosition({mouseContainer->getContentWidth() * 0.5f, mouseContainer->getContentHeight() - 90.f});
     innerContainer->setContentHeight(105.f);
     innerContainer->setID("inner-container");
 
@@ -576,48 +466,98 @@ void InputTriggerPopup::setupMouseTab() {
     mouseContainer->addChild(innerContainer);
 
     m_mainLayer->addChild(mouseContainer);
+
 }
 
-void InputTriggerPopup::checkSpecialKey() {
-    switch (m_label.key) {
-        case LevelKeys::wheelUp:
-        case LevelKeys::wheelDown:
-        case LevelKeys::cursor:
-        case LevelKeys::modLoaded:
-            m_onReleaseToggle->toggle(false);
-            m_onReleaseToggle->setVisible(false);
-            m_onReleaseLabel->setVisible(false);
-            break;
-        default:
-            m_onReleaseToggle->setVisible(true);
-            m_onReleaseLabel->setVisible(true);
-            break;
-    }
+void InputTriggerPopup::setupTouchTab() {
+    auto touchTabContainer = CCNode::create();
+    touchTabContainer->setContentSize(m_mainLayer->getContentSize());
+    touchTabContainer->setAnchorPoint({0.f, 0.f});
+    touchTabContainer->ignoreAnchorPointForPosition(false);
+    touchTabContainer->setID("touch-container");
+
+    m_mainLayer->addChild(touchTabContainer);
+    m_tabData[Tab::Touch].common.nodeContainer = touchTabContainer;
+
 }
+CCNode* InputTriggerPopup::createIntegerInput(const char* labelText, int* valuePtr, CCPoint pos) {
+
+    auto groupInputContainer = CCNode::create();
+    groupInputContainer->setContentSize({100, 60});
+    groupInputContainer->ignoreAnchorPointForPosition(false);
+    groupInputContainer->setAnchorPoint({0, 0});
+    groupInputContainer->setPosition(pos);
+    groupInputContainer->setID("group-input-container");
+
+    // 1. Background Sprite
+    auto groupInputBG = CCScale9Sprite::create("square02_small.png");
+    groupInputBG->setScale(0.8f);
+    groupInputBG->setContentSize({70, 30});
+    groupInputBG->setZOrder(-1);
+    groupInputBG->setOpacity(100);
+    groupInputContainer->addChild(groupInputBG);
+
+    // 2. Label (Parameterized)
+    auto groupInputLabel = CCLabelBMFont::create(labelText, "goldFont.fnt");
+    groupInputLabel->setScale(0.56f);
+    groupInputLabel->setAnchorPoint({0.5f, 0.f});
+    groupInputContainer->addChild(groupInputLabel);
+
+    // 3. Text Input
+    // We use the pointer to set the initial value
+    std::string initialVal = std::to_string(*valuePtr);
+    auto input = geode::TextInput::create(48, "Num");
+    input->setString(initialVal);
+    input->setCommonFilter(geode::CommonFilter::Int);
+    input->setMaxCharCount(4);
+    input->hideBG();
+
+    input->setCallback([valuePtr](const std::string& str) {
+        if (!str.empty()) {
+            *valuePtr = std::stoi(str);
+        }
+    });
+
+    // Positioning helper
+    float centerX = groupInputContainer->getContentWidth() * 0.5f;
+    input->setPosition({centerX, input->getContentHeight() * 0.5f});
+    groupInputBG->setPosition(input->getPosition());
+    groupInputLabel->setPosition({centerX, input->getPositionY() + input->getContentHeight() * 0.5f + 5});
+
+    groupInputContainer->addChild(input);
+
+    // 4. Buttons & Menu
+    auto inputBounds = input->boundingBox();
+
+    // Lambda to update both the pointer and the text visual
+    auto updateUI = [input, valuePtr](int delta) {
+        *valuePtr = std::clamp(*valuePtr + delta, 0, 9999);
+        input->setString(std::to_string(*valuePtr));
+    };
+
+    auto decrBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
+            "edit_leftBtn_001.png", 1.f, [updateUI](auto) { updateUI(-1); });
+
+    auto incrBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
+            "edit_rightBtn_001.png", 1.f, [updateUI](auto) { updateUI(1); });
+
+    decrBtn->setPosition({inputBounds.getMinX() - 25, input->getPositionY()});
+    incrBtn->setPosition({inputBounds.getMaxX() + 25, input->getPositionY()});
+
+    auto menu = CCMenu::create();
+    menu->setPosition({0, 0});
+    menu->setContentSize(groupInputContainer->getContentSize());
+    menu->addChild(decrBtn);
+    menu->addChild(incrBtn);
+
+    groupInputContainer->addChild(menu);
+
+    return groupInputContainer;
+}
+
 
 void InputTriggerPopup::onClose(CCObject* sender) {
 
-    for (const auto& obj : m_objects) {
-        auto textObj = static_cast<TextGameObject*>(obj.data());
-        auto text = textObj->m_text;
-        auto parsed_opt = getParsedKeyAction(text);
-        if (parsed_opt) {
-            auto parsed = *parsed_opt;
-            if (m_modifiedGroup) {
-                parsed.group = std::clamp(m_label.group, 0, 9999);
-            }
-            if (m_modifiedKey) {
-                parsed.key = m_label.key;
-            }
-            if (m_modifiedRelease) {
-                parsed.keyDown = m_label.keyDown;
-            }
-            auto label = getLabelFromKeyAction(parsed);
-            textObj->updateTextObject(label, false);
-        } else {
-            auto label = getLabelFromKeyAction(m_label);
-            textObj->updateTextObject(label, false);
-        }
-    }
+    // TODO :on close code
     Popup::onClose(sender);
 }

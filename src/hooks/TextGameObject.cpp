@@ -28,7 +28,7 @@ void MyTextGameObject::setupInputTrigger() {
     }
 
     if (LevelEditorLayer::get()) {
-        auto parsed_opt = getParsedKeyAction(m_text);
+        auto parsed_opt = KeyAction::parse(m_text);
         std::string labelStr = "";
 
         if (parsed_opt) {

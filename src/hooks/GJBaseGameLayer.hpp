@@ -92,7 +92,6 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         void addKeyBind(LevelKeys key, bool down, int groupId);
         void addClickAction(CollisionBlock* collision, ClickAction action);
 
-        // TODO: unify this with overloads or something
         std::optional<groupId> getGroupId(const KeyActionMapKey&);
 
         void spawnGroupKeys(const KeyActionMapKey&);
@@ -122,13 +121,11 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
     void setupText(std::string_view t);
 
-    // TODO: unify all of this
     void setupCursorGroup();
 
     // true if correctly registered (TODO: or will register) atleast one keybind
     bool setupTextLabelKeys_step1();
 
-    // TODO: check this
     bool isModActive();
 
     void setupKeybinds_step0(float);

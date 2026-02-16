@@ -12,14 +12,82 @@
 using namespace geode::prelude;
 
 
-std::string getLabelFromKeyAction(const KeyAction& t) {
+std::string KeyAction::getLabel() {
     return fmt::format(
-            "inf_inp:1 1,{},2,{},3,{}", fixKeyName(enchantum::to_string(t.key)), static_cast<unsigned int>(t.keyDown),
-            t.group);
+            "inf_inp:1 1,{},2,{},3,{}", fixKeyName(enchantum::to_string(key)), static_cast<int>(keyDown),
+            group);
 }
 
 
-std::optional<KeyAction> getParsedKeyAction(std::string_view t) {
+std::optional<KeyAction> KeyAction::parse(std::string_view t) {
+
+    if (auto result = scn::scan<std::string, int, int>(t, "inf_inp:1 {} {} {}")) {
+        auto& [key, keyDownParsed, groupParsed] = result->values();
+        if (auto enumval = keyLevelIdentifierToValue(key); enumval != LevelKeys::unknown) {
+            return KeyAction{enumval, keyDownParsed == 1, groupParsed};
+        }
+    }
+    return std::nullopt;
+}
+
+bool isOldFormatString(std::string_view t) {
+    return scn::scan<std::string, int>(t, "inf_inp:{} = {}").has_value() ||
+           scn::scan<std::string, char, int>(t, "inf_inp:{} {} = {}").has_value();
+}
+
+std::string ClickAction::getLabel() {
+    return fmt::format(
+            "inf_inp:3 {} {} {} {} {}", collisionBlockId, groupIdCursorEnter, groupIdCursorExit,
+            groupIdCursorDown, groupIdCursorUp, static_cast<uint8_t>(stealTouches), static_cast<uint8_t>(allowStealFrom));
+}
+
+
+std::optional<ClickAction> ClickAction::parse(std::string_view t) {
+    if (auto result = scn::scan<int, int, int, int, int, int, int>(t, "inf_inp:3 {} {} {} {} {} {} {}")) {
+        auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
+               stealTouches, allowStealFrom] = result->values();
+
+        return ClickAction{collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp, static_cast<bool>(stealTouches), static_cast<bool>(allowStealFrom)};
+    }
+    log::error("Could not parse click action: {}", t);
+    return std::nullopt;
+}
+
+std::string SimpleKeyAction::getLabel() {
+    return fmt::format("inf_inp:2 {} {}", group, fixKeyName(enchantum::to_string(key)));
+}
+
+std::optional<SimpleKeyAction> SimpleKeyAction::parse(std::string_view t) {
+    if (auto result = scn::scan<std::string, int>(t, "inf_inp:2 {} {}")) {
+        auto& [key, group] = result->values();
+        return SimpleKeyAction{keyLevelIdentifierToValue(key), group};
+    }
+    return std::nullopt;
+}
+
+
+std::optional<II_ObjectAction> parseObjectString(std::string_view t) {
+    if (auto result = KeyAction::parse(t)) {
+        return result;
+    }
+    if (auto result = SimpleKeyAction::parse(t)) {
+        return result;
+    }
+    if (auto result = ClickAction::parse(t)) {
+        return result;
+    }
+    return std::nullopt;
+}
+
+
+
+
+
+
+
+/*
+OLD FORMAT
+
     // std::string keyStr;
     // bool keyDown = false;
     // int group = 0;
@@ -54,59 +122,6 @@ std::optional<KeyAction> getParsedKeyAction(std::string_view t) {
 
     // return KeyAction{enumval, keyDown, group};
 
-    if (auto result = scn::scan<std::string, int, int>(t, "inf_inp:1 {} {} {}")) {
-        auto& [key, keyDownParsed, groupParsed] = result->values();
-        if (auto enumval = keyLevelIdentifierToValue(key); enumval != LevelKeys::unknown) {
-            return KeyAction{enumval, keyDownParsed == 1, groupParsed};
-        }
-    }
-    return std::nullopt;
-}
-
-bool isOldFormatString(std::string_view t) {
-    return scn::scan<std::string, int>(t, "inf_inp:{} = {}").has_value() ||
-           scn::scan<std::string, char, int>(t, "inf_inp:{} {} = {}").has_value();
-}
-
-std::string getLabelFromClickAction(const ClickAction& t) {
-    return fmt::format(
-            "inf_inp:3 {} {} {} {} {}", t.collisionBlockId, t.groupIdCursorEnter, t.groupIdCursorExit,
-            t.groupIdCursorDown, t.groupIdCursorUp, static_cast<uint8_t>(t.stealTouches), static_cast<uint8_t>(t.allowStealFrom));
-}
 
 
-std::optional<ClickAction> getClickActionFromLabel(std::string_view t) {
-    if (auto result = scn::scan<int, int, int, int, int, int, int>(t, "inf_inp:3 {} {} {} {} {} {} {}")) {
-        auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
-               stealTouches, allowStealFrom] = result->values();
-
-        return ClickAction{collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp, static_cast<bool>(stealTouches), static_cast<bool>(allowStealFrom)};
-    }
-    return std::nullopt;
-}
-
-std::string getLabelFromSimpleKeyAction(const SimpleKeyAction& t) {
-    return fmt::format("inf_inp:2 {} {}", t.group, fixKeyName(enchantum::to_string(t.key)));
-}
-
-std::optional<SimpleKeyAction> getSimpleKeyActionFromLabel(std::string_view t) {
-    if (auto result = scn::scan<std::string, int>(t, "inf_inp:2 {} {}")) {
-        auto& [key, group] = result->values();
-        return SimpleKeyAction{keyLevelIdentifierToValue(key), group};
-    }
-    return std::nullopt;
-}
-
-
-std::optional<II_ObjectAction> parseObjectString(std::string_view t) {
-    if (auto result = getParsedKeyAction(t)) {
-        return result;
-    }
-    if (auto result = getSimpleKeyActionFromLabel(t)) {
-        return result;
-    }
-    if (auto result = getClickActionFromLabel(t)) {
-        return result;
-    }
-    return std::nullopt;
-}
+*/

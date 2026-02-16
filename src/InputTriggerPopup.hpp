@@ -7,43 +7,83 @@
 #include <Geode/ui/TextInput.hpp>
 #include <unordered_map>
 #include <vector>
+#include <Geode/utils/cocos.hpp>
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "LevelKeys.hpp"
 #include "TextParsing.hpp"
+#include <reaction/reaction.h>
 
 
 class InputTriggerPopup : public geode::Popup {
 public:
-    static InputTriggerPopup* create(std::vector<geode::Ref<GameObject>> objects);
+    static InputTriggerPopup* create(TextGameObject* object);
 
 protected:
-    bool init(std::vector<geode::Ref<GameObject>> objects);
+
+    enum class Tab {
+        Keyboard,
+        Mouse,
+        Touch, //(click action)
+    };
+
+    bool init(TextGameObject* textObject);
     void onClose(CCObject* sender) override;
-    void setupValues();
 
     CCNode* createMouseToggler(const std::string& label, LevelKeys key);
-    CCMenuItemToggler* createTabToggler(const std::string& label, int tab);
+    CCMenuItemToggler* createTabToggler(const std::string& label, Tab tab);
     CCMenuItemToggler* createKeyboardToggler(LevelKeys key, float width = 40, const std::string& labelOverride = "");
     CCMenu* createKeyboardMenu(float gap, float yOffset, int row);
+    CCNode* createIntegerInput(const char* labelText, int* valuePtr, CCPoint position); 
 
     void setupKeyboardTab();
     void setupMouseTab();
+    void setupTouchTab();
 
-    void checkSpecialKey();
+    struct KeyboardTabData {
+        KeyAction m_keyAction;
+        std::vector<geode::Ref<CCMenuItemToggler>> m_keyboardButtons;
+        CCMenuItemToggler* m_onReleaseToggle;
+        CCLabelBMFont* m_onReleaseLabel;
+    };
 
-    bool m_modifiedGroup = false;
-    bool m_modifiedKey = false;
-    bool m_modifiedRelease = false;
+    struct TouchTabData {
+        ClickAction m_clickAction;
+    };
 
-    // TODO: change this to the typedef
-    KeyAction m_label;
+    struct MouseTabData {
+        SimpleKeyAction m_simpleKeyAction;
+    };
 
-    geode::TextInput* m_groupInput;
-    CCMenuItemToggler* m_onModLoadedToggle;
-    CCMenuItemToggler* m_onReleaseToggle;
-    CCLabelBMFont* m_onReleaseLabel;
-    std::unordered_map<geode::Ref<CCMenuItemToggler>, int> m_toggles;
-    std::vector<geode::Ref<CCMenuItemToggler>> m_tabToggles;
-    std::vector<geode::Ref<CCNode>> m_tabs;
-    std::vector<geode::Ref<GameObject>> m_objects;
+    
+    //this will get overriden later, but for the initialization it needs var()
+    reaction::Var<Tab> m_currentActionTab = reaction::var(Tab::Keyboard);
+
+
+
+    using TabSpecificData = std::variant<KeyboardTabData, MouseTabData, TouchTabData>;
+
+    struct TabNodes {
+        geode::Ref<CCMenuItemToggler> toggler;
+        std::vector<geode::Ref<CCNode>> tabNodes;
+    };
+    struct TabData {
+        TabNodes common;
+        TabSpecificData specific;
+    };
+
+    KeyboardTabData& getKeyboardData() {
+        return std::get<KeyboardTabData>(m_tabData[Tab::Keyboard].specific);
+    }
+    
+    MouseTabData& getMouseData() {
+        return std::get<MouseTabData>(m_tabData[Tab::Mouse].specific);
+    }
+
+    TouchTabData& getTouchData() {
+        return std::get<TouchTabData>(m_tabData[Tab::Touch].specific);
+    }
+
+    std::unordered_map<Tab, TabData> m_tabData;
+
+    geode::Ref<TextGameObject> m_object;
 };
