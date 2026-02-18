@@ -5,25 +5,25 @@
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <unordered_map>
-#include <vector>
 #include <Geode/utils/cocos.hpp>
+#include <reaction/reaction.h>
+#include <variant>
+#include <vector>
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "LevelKeys.hpp"
 #include "TextParsing.hpp"
-#include <reaction/reaction.h>
 
 
 class InputTriggerPopup : public geode::Popup {
 public:
     static InputTriggerPopup* create(TextGameObject* object);
+    static bool isSpecialMouseKeyboardKey(LevelKeys key);
 
 protected:
-
     enum class Tab {
         Keyboard,
         Mouse,
-        Touch, //(click action)
+        Touch,
     };
 
     bool init(TextGameObject* textObject);
@@ -33,17 +33,14 @@ protected:
     CCMenuItemToggler* createTabToggler(const std::string& label, Tab tab);
     CCMenuItemToggler* createKeyboardToggler(LevelKeys key, float width = 40, const std::string& labelOverride = "");
     CCMenu* createKeyboardMenu(float gap, float yOffset, int row);
-    CCNode* createIntegerInput(const char* labelText, int* valuePtr, CCPoint position); 
+    CCNode* createIntegerInput(const char* labelText, int* valuePtr, CCPoint position);
 
-    void setupKeyboardTab();
-    void setupMouseTab();
-    void setupTouchTab();
+    static void updateButtonPressed(CCMenuItemToggler** oldToggled, CCMenuItemToggler* newpressed);
 
     struct KeyboardTabData {
         KeyAction m_keyAction;
         std::vector<geode::Ref<CCMenuItemToggler>> m_keyboardButtons;
-        CCMenuItemToggler* m_onReleaseToggle;
-        CCLabelBMFont* m_onReleaseLabel;
+        CCMenuItemToggler* pressed = nullptr;
     };
 
     struct TouchTabData {
@@ -52,38 +49,41 @@ protected:
 
     struct MouseTabData {
         SimpleKeyAction m_simpleKeyAction;
+        CCMenuItemToggler* pressed = nullptr;
+
+        reaction::Var<LevelKeys> key = reaction::var(LevelKeys::empty);
+        int group;
+        bool keyDown = true;
     };
 
-    
-    //this will get overriden later, but for the initialization it needs var()
     reaction::Var<Tab> m_currentActionTab = reaction::var(Tab::Keyboard);
 
-
-
-    using TabSpecificData = std::variant<KeyboardTabData, MouseTabData, TouchTabData>;
-
-    struct TabNodes {
+    struct TabToggler {
         geode::Ref<CCMenuItemToggler> toggler;
         std::vector<geode::Ref<CCNode>> tabNodes;
     };
-    struct TabData {
-        TabNodes common;
-        TabSpecificData specific;
-    };
 
-    KeyboardTabData& getKeyboardData() {
-        return std::get<KeyboardTabData>(m_tabData[Tab::Keyboard].specific);
-    }
-    
-    MouseTabData& getMouseData() {
-        return std::get<MouseTabData>(m_tabData[Tab::Mouse].specific);
-    }
+    TabToggler m_keyboardToggler;
+    TabToggler m_mouseToggler;
+    TabToggler m_touchToggler;
 
-    TouchTabData& getTouchData() {
-        return std::get<TouchTabData>(m_tabData[Tab::Touch].specific);
-    }
+    KeyboardTabData m_keyboardTabData;
+    MouseTabData m_mouseTabData;
+    TouchTabData m_touchTabData;
 
-    std::unordered_map<Tab, TabData> m_tabData;
+    KeyboardTabData& getKeyboardData() { return m_keyboardTabData; }
+
+    MouseTabData& getMouseData() { return m_mouseTabData; }
+
+    TouchTabData& getTouchData() { return m_touchTabData; }
+
+    TabToggler& getToggler(Tab tab) {
+        switch (tab) {
+            case Tab::Keyboard: return m_keyboardToggler;
+            case Tab::Mouse: return m_mouseToggler;
+            case Tab::Touch: return m_touchToggler;
+        }
+    }
 
     geode::Ref<TextGameObject> m_object;
 };

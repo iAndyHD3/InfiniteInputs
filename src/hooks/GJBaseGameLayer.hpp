@@ -1,37 +1,21 @@
 #pragma once
+
+#include <string_view>
+#include <unordered_map>
+#include <vector>
+
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include "../LevelKeys.hpp"
-#include "Geode/utils/cocos.hpp"
-
-
-// #include <alphalaneous.alphas-ui-pack/include/touch/Touch.hpp>
-// #include "alphalaneous.alphas-ui-pack/include/touch/TouchDispatcher.hpp"
-//  #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/AdvancedScrollDelegate.hpp>
-//  #include <alphalaneous.alphas-ui-pack/include/nodes/scroll/ScrollDispatcher.hpp>
-
-
-#include <Geode/modify/GJBaseGameLayer.hpp>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
 #include "../TextParsing.hpp"
+
 
 
 using namespace geode::prelude;
 
 using groupId = int;
 using CollisionBlock = EffectGameObject;
-
-// struct MyClickDelegate : public CCNode, alpha::dispatcher::TouchDelegate {
-//     bool clickBegan(alpha::dispatcher::TouchEvent* touch) override;
-// 	void clickEnded(alpha::dispatcher::TouchEvent* touch) override;
-// };
-
-// struct MyScrollDelegate : public CCNode, alpha::dispatcher::AdvancedScrollDelegate {
-//     void scroll(float x, float y) override;
-// };
 
 struct KeyActionMapKey {
     LevelKeys key;
@@ -79,6 +63,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         bool addedAtleastOneKey = false;
         bool oldFormatFound = false;
 
+        //cache
         MyBaseLayer* layer = nullptr;
 
         std::vector<GameObject*> cursorFollowObjects;

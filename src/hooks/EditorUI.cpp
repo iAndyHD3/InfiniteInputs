@@ -81,7 +81,7 @@ void MyEditorUI::onCreateObject(int objectID) {
 
     if (m_selectedObject) {
         auto textObj = static_cast<TextGameObject*>(m_selectedObject);
-        textObj->updateTextObject("inf_inp:empty 1 = 0", false);
+        textObj->updateTextObject("inf_inp:1 empty 1 = 0", false);
     }
 }
 

@@ -38,5 +38,5 @@ target_link_libraries(${PROJECT_NAME} reaction::reaction scn::scn enchantum::enc
 #https://stackoverflow.com/a/77419222
 if (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${PROJECT_NAME} PUBLIC -fansi-escape-codes -fcolor-diagnostics)
-    target_link_options(${PROJECT_NAME} PUBLIC -fansi-escape-codes -fcolor-diagnostics -Wno-nrvo)
+    target_link_options(${PROJECT_NAME} PUBLIC -fansi-escape-codes -fcolor-diagnostics -Wnrvo)
 endif()

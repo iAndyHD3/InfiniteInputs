@@ -7,14 +7,14 @@
 #include <fmt/format.h>
 #include <scn/scan.h>
 #include "LevelKeys.hpp"
-
+#include "InputTriggerPopup.hpp"
 
 using namespace geode::prelude;
 
 
 std::string KeyAction::getLabel() {
     return fmt::format(
-            "inf_inp:1 1,{},2,{},3,{}", fixKeyName(enchantum::to_string(key)), static_cast<int>(keyDown),
+            "inf_inp:1 {} {} {}", fixKeyName(enchantum::to_string(key)), static_cast<int>(keyDown),
             group);
 }
 
@@ -37,7 +37,7 @@ bool isOldFormatString(std::string_view t) {
 
 std::string ClickAction::getLabel() {
     return fmt::format(
-            "inf_inp:3 {} {} {} {} {}", collisionBlockId, groupIdCursorEnter, groupIdCursorExit,
+            "inf_inp:3 {} {} {} {} {} {} {}", collisionBlockId, groupIdCursorEnter, groupIdCursorExit,
             groupIdCursorDown, groupIdCursorUp, static_cast<uint8_t>(stealTouches), static_cast<uint8_t>(allowStealFrom));
 }
 
@@ -54,17 +54,30 @@ std::optional<ClickAction> ClickAction::parse(std::string_view t) {
 }
 
 std::string SimpleKeyAction::getLabel() {
-    return fmt::format("inf_inp:2 {} {}", group, fixKeyName(enchantum::to_string(key)));
+    return fmt::format("inf_inp:2 {} {}", fixKeyName(enchantum::to_string(key)), group);
+}
+
+bool SimpleKeyAction::isSimpleKey(LevelKeys e)
+{
+    switch(e) {
+        default: return false;
+        case LevelKeys::wheelUp:
+        case LevelKeys::wheelDown:
+        case LevelKeys::cursor:
+        case LevelKeys::modLoaded:
+            return true;
+    }
 }
 
 std::optional<SimpleKeyAction> SimpleKeyAction::parse(std::string_view t) {
     if (auto result = scn::scan<std::string, int>(t, "inf_inp:2 {} {}")) {
         auto& [key, group] = result->values();
-        return SimpleKeyAction{keyLevelIdentifierToValue(key), group};
+        LevelKeys parsedKey = keyLevelIdentifierToValue(key);
+        if(!isSimpleKey(parsedKey)) return std::nullopt;
+        return SimpleKeyAction{parsedKey, group};
     }
     return std::nullopt;
 }
-
 
 std::optional<II_ObjectAction> parseObjectString(std::string_view t) {
     if (auto result = KeyAction::parse(t)) {
