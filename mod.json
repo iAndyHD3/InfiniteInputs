@@ -10,7 +10,7 @@
 	"name": "Infinite Inputs",
 	"version": "v1.0.0",
 	"developer": "iAndyHD3",
-	"description": "Bind objs to cursor or keys to spawn group ID",
+	"description": "Keyboard, Mouse and Touch support to levels!",
 	"resources": {
 		"sprites": ["resources/*.png"]
 	},
