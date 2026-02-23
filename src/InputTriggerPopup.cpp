@@ -5,6 +5,7 @@
 #include <arc/prelude.hpp>
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
+#include "BetterGeodeLogs.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/loader/Loader.hpp"
@@ -13,8 +14,8 @@
 #include "Geode/utils/ZStringView.hpp"
 #include "Geode/utils/general.hpp"
 #include "LevelKeys.hpp"
-#include "LogVar.hpp"
 #include "TextParsing.hpp"
+#include "hooks/EditorUI.hpp"
 
 using namespace geode::prelude;
 
@@ -33,10 +34,12 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     if (!Popup::init(440.f, 310.f)) {
         return false;
     }
-    log::info("init with string: {}", object->m_text);
+
+    Log.i("popup", "init with string: {}", object->m_text);
     getKeyboardData().m_keyAction.key = LevelKeys::empty;
     getKeyboardData().m_keyAction.keyDown = true;
     getMouseData().keyDown = true;
+
 
     m_noElasticity = true;
     m_object = object;
@@ -77,6 +80,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     okBtn->setPosition({m_mainLayer->getContentWidth() * 0.5f, 24});
     okBtn->setID("ok-button");
 
+
     m_buttonMenu->addChild(okBtn);
 
     auto tabsMenu = CCMenu::create();
@@ -86,32 +90,33 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     tabsMenu->setPosition({m_mainLayer->getContentWidth() * 0.5f, m_mainLayer->getContentHeight() - 32});
     tabsMenu->setID("tabs-menu");
 
+
     auto tabsLayout = RowLayout::create();
 
     tabsMenu->setLayout(tabsLayout);
 
     m_mainLayer->addChild(tabsMenu);
-    log::info("KEY BEFORE 3: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
+    Log.i("popup", "KEY BEFORE 3: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
 
     tabsMenu->addChild(createTabToggler("Keyboard", Tab::Keyboard));
     tabsMenu->addChild(createTabToggler("Mouse", Tab::Mouse));
     tabsMenu->addChild(createTabToggler("Touch", Tab::Touch));
 
     tabsMenu->updateLayout();
-    log::info("KEY BEFORE 2: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
+    Log.i("popup", "KEY BEFORE 2: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
 
-    log::info("BEFORE BEFORE IF");
+    Log.i("popup", "BEFORE BEFORE IF");
 
-    log::info("BEFORE IF");
+    Log.i("popup", "BEFORE IF");
 
     Tab selectedTab;
     if (auto parsed = KeyAction::parse(object->m_text)) {
-        log::info("PASED KEY: {}", enchantum::to_string((*parsed).key));
+        Log.i("popup", "PASED KEY: {}", enchantum::to_string((*parsed).key));
 
         if (isSpecialMouseKeyboardKey(parsed->key)) {
             m_mouseTabData.key = reaction::var(parsed->key);
             m_mouseTabData.group = parsed->group;
-            log::info("setting group: {}", m_mouseTabData.group);
+            Log.i("popup", "setting group: {}", m_mouseTabData.group);
             m_mouseTabData.keyDown = parsed->keyDown;
             selectedTab = Tab::Mouse;
         } else {
@@ -123,11 +128,11 @@ bool InputTriggerPopup::init(TextGameObject* object) {
         m_mouseTabData.group = m_mouseTabData.m_simpleKeyAction.group;
         m_mouseTabData.key = reaction::var(parsed->key);
         selectedTab = (Tab::Mouse);
-        log::info("parsed mouse input");
+        Log.i("popup", "parsed mouse input");
     } else if (auto parsed = ClickAction::parse(object->m_text)) {
         m_touchTabData.m_clickAction = std::move(*parsed);
         selectedTab = (Tab::Touch);
-        log::info("parsed touch input");
+        Log.i("popup", "parsed touch input");
     } else {
         selectedTab = (Tab::Keyboard);
         m_keyboardTabData.m_keyAction.key = LevelKeys::empty;
@@ -137,8 +142,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     }
     m_currentActionTab.value(selectedTab);
 
-    log::info("BEFORE VALUE");
-    log::info("KEY BEFORE: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
+    Log.i("popup", "BEFORE VALUE");
+    Log.i("popup", "KEY BEFORE: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
 
     // KEYBOARD
 
@@ -244,7 +249,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     auto m_onReleaseToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&kbdata](CCMenuItemToggler* toggler) {
                 kbdata.m_keyAction.keyDown = !kbdata.m_keyAction.keyDown;
-                log::info("release toggle");
+                Log.i("popup", "release toggle");
             });
 
     m_onReleaseToggle->toggle(!kbdata.m_keyAction.keyDown);
@@ -266,7 +271,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     m_mainLayer->addChild(keyboardContainer);
 
-    log::info("KEY AFTER: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
+    Log.i("popup", "KEY AFTER: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
 
     // MOUSE
 
@@ -315,10 +320,10 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     auto mouseOnReleaseToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
                 m_mouseTabData.keyDown = !m_mouseTabData.keyDown;
-                log::info("release toggle");
+                Log.i("popup", "release toggle");
             });
 
-    LOGI(m_mouseTabData.keyDown);
+    Log.i("popup", "{}", m_mouseTabData.keyDown);
     mouseOnReleaseToggle->toggle(!m_mouseTabData.keyDown);
 
     mouseOnReleaseToggle->setID("mouse-on-release-toggle");
@@ -346,12 +351,12 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     m_mouseToggler.tabNodes.push_back(mouseOnReleaseToggleMenu);
     reaction::action([mouseOnReleaseLabel, mouseOnReleaseToggle, this]() {
         LevelKeys newkey = m_mouseTabData.key();
-        log::info("CALLED WITH: {}", enchantum::to_string(newkey));
+        Log.i("popup", "CALLED WITH: {}", enchantum::to_string(newkey));
         bool isSpecialKey = isSpecialMouseKeyboardKey(newkey);
-        LOGI(isSpecialKey);
+        Log.i("popup", "is special: {}", isSpecialKey);
         mouseOnReleaseLabel->setVisible(isSpecialKey);
         mouseOnReleaseToggle->setVisible(isSpecialKey);
-        LOGI(mouseOnReleaseToggle->isVisible());
+        Log.i("popup", "mouse release toggle is visible: {}", mouseOnReleaseToggle->isVisible());
     });
 
     auto touchTabContainer = CCNode::create();
@@ -398,8 +403,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     auto stealTouchesToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&, this](CCMenuItemToggler* toggler) {
-                m_touchTabData.m_clickAction.stealTouches = toggler->isToggled();
-                log::info("steal touches toggle");
+                m_touchTabData.m_clickAction.stealTouches = !toggler->isToggled();
+                Log.i("popup", "steal touches toggle");
             });
     stealTouchesToggle->toggle(m_touchTabData.m_clickAction.stealTouches);
     stealTouchesToggle->setPosition({m_mainLayer->getContentWidth() * 0.25f - 40.f, 30.f});
@@ -416,8 +421,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     auto allowStealFromToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&, this](CCMenuItemToggler* toggler) {
-                m_touchTabData.m_clickAction.allowStealFrom = toggler->isToggled();
-                log::info("allow steal from toggle");
+                m_touchTabData.m_clickAction.allowStealFrom = !toggler->isToggled();
+                Log.i("popup", "allow steal from toggle");
             });
     allowStealFromToggle->toggle(m_touchTabData.m_clickAction.allowStealFrom);
     allowStealFromToggle->setPosition({m_mainLayer->getContentWidth() * 0.75f - 10.f, 30.f});
@@ -440,7 +445,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     reaction::action([this]() {
         Tab toggledTab = m_currentActionTab();
-        log::info("REACTION TOGGLED TAB: {}", enchantum::to_string(toggledTab));
+        Log.i("popup", "REACTION TOGGLED TAB: {}", enchantum::to_string(toggledTab));
 
         for (auto& toggler : {std::ref(m_keyboardToggler), std::ref(m_mouseToggler), std::ref(m_touchToggler)}) {
             for (const auto& nodes : toggler.get().tabNodes) {
@@ -461,11 +466,11 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
         TabToggler& activeToggler = getToggler(toggledTab);
         for (const auto& nodes : activeToggler.tabNodes) {
-            LOGI(nodes->getID());
+            Log.i("popup", "nodeID: {}", nodes->getID());
             nodes->setVisible(true);
         }
 
-        log::info("clickable false on: {}", activeToggler.toggler);
+        Log.i("popup", "clickable false on: {}", activeToggler.toggler);
         activeToggler.toggler->setEnabled(false);
         activeToggler.toggler->toggle(true);
     });
@@ -591,7 +596,7 @@ InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::
     auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [&kbData, key](CCMenuItemToggler* self) {
         updateButtonPressed(&kbData.pressed, self);
         kbData.m_keyAction.key = key;
-        log::info("toggled key button: {}", enchantum::to_string(key));
+        Log.i("popup", "toggled key button: {}", enchantum::to_string(key));
     });
 
 
@@ -741,7 +746,10 @@ void InputTriggerPopup::onClose(CCObject* sender) {
         }
         case Tab::Touch: label = getTouchData().m_clickAction.getLabel(); break;
     }
-    log::info("saving: {}", label);
+    Log.i("popup", "saving: {}", label);
+
     m_object->updateTextObject(label, false);
+
+
     Popup::onClose(sender);
 }

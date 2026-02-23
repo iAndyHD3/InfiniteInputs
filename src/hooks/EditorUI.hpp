@@ -3,6 +3,10 @@
 
 
 class $modify(MyEditorUI, EditorUI) {
+
+    struct Fields {
+        bool editingNormalTextObject = false;
+    };
     void setupCreateMenu();
     void onCreateObject(int objectID);
     void clickOnPosition(cocos2d::CCPoint position);

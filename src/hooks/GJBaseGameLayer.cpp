@@ -6,13 +6,12 @@
 #include <enchantum/enchantum.hpp>
 #include <numbers>
 #include <scn/scan.h>
-#include "../LogVar.hpp"
-#include "../TextParsing.hpp"
-#include "Geode/loader/Loader.hpp"
+#include "BetterGeodeLogs.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "LevelKeys.hpp"
+#include "TextParsing.hpp"
 
 
 #define ETOSTRING(k) enchantum::to_string(k)
@@ -40,7 +39,6 @@ void MyBaseLayer::Fields::addKeyBind(LevelKeys key, bool down, int groupId) {
 }
 
 
-
 std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& key) {
     auto groupid = keyMap.find(key);
     return groupid != keyMap.end() ? std::optional<groupId>(groupid->second) : std::nullopt;
@@ -49,14 +47,14 @@ std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& ke
 
 void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
     if (auto group = getGroupId(key)) {
-        log::info("KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
+        Log.i("gjbgl", "KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
         layer->spawnGroup(*group);
     }
 }
 
 void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
     if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
-        log::info("[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
+        Log.i("gjbgl", "[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
         layer->spawnGroup(group->second);
     }
 }
@@ -146,7 +144,7 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     }
     // stop playtest
     else if (fields->active && !inPlaytest) {
-        log::info("stop playtest?");
+        Log.i("gjbgl", "stop playtest?");
         // default values of all fields again (cleared)
         *fields = MyBaseLayer::Fields();
     }
@@ -181,7 +179,7 @@ void MyBaseLayer::updateLoop(float) {
 
 void MyBaseLayer::resetLevelVariables() {
     GJBaseGameLayer::resetLevelVariables();
-    log::info("resetting");
+    Log.i("gjbgl", "resetting");
 
     for (const auto& o : m_fields->cursorFollowObjects) {
         o->setLastPosition(o->getPosition());
@@ -197,11 +195,12 @@ void MyBaseLayer::setupCursorGroup() {
     auto fields = m_fields.self();
 
     auto it = fields->simpleKeyMap.find(LevelKeys::cursor);
-    if(it == fields->simpleKeyMap.end()) return;
+    if (it == fields->simpleKeyMap.end())
+        return;
     int cursorGroupId = it->second;
 
 
-    log::info("SETTING UP CURSOR GROUP {}", cursorGroupId);
+    Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", cursorGroupId);
     fields->cursorFollowGroupId = cursorGroupId;
     fields->cursorFollowObjects.clear();
     for (const auto& o : CCArrayExt<GameObject*>(m_objects)) {
@@ -228,7 +227,7 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
                     m_fields->clickActionAddQueue.push_back(std::move(*action));
                 }
             } else {
-                log::error("Failed to parse label: {}", static_cast<TextGameObject*>(obj)->m_text);
+                Log.e("gjbgl", "Failed to parse label: {}", static_cast<TextGameObject*>(obj)->m_text);
             }
         }
     }
@@ -237,7 +236,8 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
         if (obj->m_objectID == 1816) {
             for (const auto& clickaction : fields->clickActionAddQueue) {
                 if (clickaction.collisionBlockId == obj->m_itemID) {
-                    log::info("{}", obj);
+                    // Log.i("gjbgl", "{}", obj);
+                    Log.i("gjbgl", "{}", obj);
                     fields->clickActions.emplace_back(obj, std::move(clickaction));
                 }
             }
@@ -246,13 +246,13 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     fields->clickActionAddQueue.clear();
 
 
-    log::info("Added {} down keys", fields->keyMap.size());
-    log::info("Added {} simple keys", fields->simpleKeyMap.size());
-    log::info("Added {} click keys", fields->clickActions.size());
-    log::info("Button Objects: {}", fields->clickActions.size());
-    log::info("Cursor Group: {}", fields->cursorFollowGroupId);
-    //log::info("Wheel Up Group: {}", fields->wheelUpGroup);
-    //log::info("Wheel Down Group: {}", fields->wheelDownGroup);
+    Log.i("gjbgl", "Added {} down keys", fields->keyMap.size());
+    Log.i("gjbgl", "Added {} simple keys", fields->simpleKeyMap.size());
+    Log.i("gjbgl", "Added {} click keys", fields->clickActions.size());
+    Log.i("gjbgl", "Button Objects: {}", fields->clickActions.size());
+    Log.i("gjbgl", "Cursor Group: {}", fields->cursorFollowGroupId);
+    // Log.i("gjbgl", "Wheel Up Group: {}", fields->wheelUpGroup);
+    // Log.i("gjbgl", "Wheel Down Group: {}", fields->wheelDownGroup);
 
     fields->addedAtleastOneKey =
             !fields->keyMap.empty() || !fields->simpleKeyMap.empty() || !fields->clickActions.empty();
@@ -269,7 +269,7 @@ bool MyBaseLayer::isModActive() {
 
 void MyBaseLayer::setupKeybinds_step0(float) {
     if (!setupTextLabelKeys_step1()) {
-        log::error("not parsed any labels");
+        Log.e("gjbgl", "not parsed any labels");
         return;
     }
 
@@ -292,7 +292,7 @@ void MyBaseLayer::handleScroll(float x, float y) {
 }
 
 void MyBaseLayer::nh_handleKeypress(LevelKeys key, bool down) {
-    log::debug("Handle key press");
+    Log.d("gjbgl", "Handle key press");
     m_fields->spawnGroupKeys({key, down});
 }
 
@@ -322,6 +322,6 @@ cocos2d::CCPoint MyBaseLayer::screenToGame(const cocos2d::CCPoint& screenPos) {
 
 
 void MyBaseLayer::spawnGroup(groupId id) {
-    log::info("spawn group: {}", id);
+    Log.i("gjbgl", "spawn group: {}", id);
     GJBaseGameLayer::spawnGroup(id, false, 0, gd::vector<int>(), 0, 0);
 }

@@ -8,6 +8,7 @@
 #include "Geode/loader/Mod.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "InputTriggerPopup.hpp"
+#include "TextGameObject.hpp"
 
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
@@ -111,17 +112,23 @@ void MyEditorUI::clickOnPosition(cocos2d::CCPoint position) {
 }
 
 void MyEditorUI::editObject(cocos2d::CCObject* sender) {
+
+    log::info("{}", m_selectedObjectIndex);
     if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return EditorUI::editObject(sender);
     }
 
-    if(!m_selectedObject) {
-        return EditorUI::editObject(sender);
+    if (m_selectedObject && m_selectedObject->m_objectID == 914) {
+
+        bool isAlreadyInputTrigger = m_selectedObject->getChildByIDRecursive("input_trigger_sprite"_spr);
+        if (isAlreadyInputTrigger) {
+            m_fields->editingNormalTextObject = false;
+            return InputTriggerPopup::create(static_cast<TextGameObject*>(m_selectedObject))->show();
+        } else {
+            m_fields->editingNormalTextObject = true;
+        }
     }
 
-    if(m_selectedObject->m_objectID == 914) {
-        return InputTriggerPopup::create(static_cast<TextGameObject*>(m_selectedObject))->show();
-    }
 
     EditorUI::editObject(sender);
 }

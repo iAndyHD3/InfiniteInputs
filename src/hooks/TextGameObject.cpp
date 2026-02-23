@@ -4,6 +4,7 @@
 #include <enchantum/enchantum.hpp>
 #include <string_view>
 #include "../TextParsing.hpp"
+#include "EditorUI.hpp"
 #include "LevelKeys.hpp"
 
 
@@ -11,6 +12,10 @@ using namespace geode::prelude;
 
 void MyTextGameObject::setupInputTrigger() {
     if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
+        return;
+    }
+
+    if (auto ui = EditorUI::get(); ui && static_cast<MyEditorUI*>(ui)->m_fields->editingNormalTextObject) {
         return;
     }
 
@@ -54,6 +59,7 @@ void MyTextGameObject::setupInputTrigger() {
         addChild(labelContainer);
 
         auto spr = CCSprite::create("input_trigger.png"_spr);
+        spr->setID("input_trigger_sprite"_spr);
 
         setContentSize(spr->getContentSize());
         m_width = getContentWidth();
@@ -74,6 +80,7 @@ void MyTextGameObject::customObjectSetup(gd::vector<gd::string>& p0, gd::vector<
     if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return;
     }
+
     setupInputTrigger();
 }
 

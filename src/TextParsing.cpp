@@ -6,16 +6,16 @@
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
 #include <scn/scan.h>
-#include "LevelKeys.hpp"
+#include "BetterGeodeLogs.hpp"
 #include "InputTriggerPopup.hpp"
+#include "LevelKeys.hpp"
+
 
 using namespace geode::prelude;
 
 
 std::string KeyAction::getLabel() {
-    return fmt::format(
-            "inf_inp:1 {} {} {}", fixKeyName(enchantum::to_string(key)), static_cast<int>(keyDown),
-            group);
+    return fmt::format("inf_inp:1 {} {} {}", fixKeyName(enchantum::to_string(key)), static_cast<int>(keyDown), group);
 }
 
 
@@ -38,7 +38,8 @@ bool isOldFormatString(std::string_view t) {
 std::string ClickAction::getLabel() {
     return fmt::format(
             "inf_inp:3 {} {} {} {} {} {} {}", collisionBlockId, groupIdCursorEnter, groupIdCursorExit,
-            groupIdCursorDown, groupIdCursorUp, static_cast<uint8_t>(stealTouches), static_cast<uint8_t>(allowStealFrom));
+            groupIdCursorDown, groupIdCursorUp, static_cast<uint8_t>(stealTouches),
+            static_cast<uint8_t>(allowStealFrom));
 }
 
 
@@ -47,9 +48,16 @@ std::optional<ClickAction> ClickAction::parse(std::string_view t) {
         auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
                stealTouches, allowStealFrom] = result->values();
 
-        return ClickAction{collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp, static_cast<bool>(stealTouches), static_cast<bool>(allowStealFrom)};
+        return ClickAction{
+                collisionBlockId,
+                groupIdCursorEnter,
+                groupIdCursorExit,
+                groupIdCursorDown,
+                groupIdCursorUp,
+                static_cast<bool>(stealTouches),
+                static_cast<bool>(allowStealFrom)};
     }
-    log::error("Could not parse click action: {}", t);
+    Log.e("textparsing", "Could not parse click action: {}", t);
     return std::nullopt;
 }
 
@@ -57,15 +65,13 @@ std::string SimpleKeyAction::getLabel() {
     return fmt::format("inf_inp:2 {} {}", fixKeyName(enchantum::to_string(key)), group);
 }
 
-bool SimpleKeyAction::isSimpleKey(LevelKeys e)
-{
-    switch(e) {
+bool SimpleKeyAction::isSimpleKey(LevelKeys e) {
+    switch (e) {
         default: return false;
         case LevelKeys::wheelUp:
         case LevelKeys::wheelDown:
         case LevelKeys::cursor:
-        case LevelKeys::modLoaded:
-            return true;
+        case LevelKeys::modLoaded: return true;
     }
 }
 
@@ -73,7 +79,8 @@ std::optional<SimpleKeyAction> SimpleKeyAction::parse(std::string_view t) {
     if (auto result = scn::scan<std::string, int>(t, "inf_inp:2 {} {}")) {
         auto& [key, group] = result->values();
         LevelKeys parsedKey = keyLevelIdentifierToValue(key);
-        if(!isSimpleKey(parsedKey)) return std::nullopt;
+        if (!isSimpleKey(parsedKey))
+            return std::nullopt;
         return SimpleKeyAction{parsedKey, group};
     }
     return std::nullopt;
@@ -93,11 +100,6 @@ std::optional<II_ObjectAction> parseObjectString(std::string_view t) {
 }
 
 
-
-
-
-
-
 /*
 OLD FORMAT
 
@@ -112,7 +114,7 @@ OLD FORMAT
     //     if(auto keyDownOpt = praseKeyUpDownSpecifier(keyDownParsed)) {
     //         keyDown = *keyDownOpt;
     //     } else {
-    //         geode::log::error("Not accepted key down/up specifier: {}", keyDownParsed);
+    //         geode::Log.e("textparsing", "Not accepted key down/up specifier: {}", keyDownParsed);
     //         return std::nullopt;
     //     }
 
@@ -129,7 +131,7 @@ OLD FORMAT
 
     // auto enumval = keyLevelIdentifierToValue(keyStr);
     // if (enumval == LevelKeys::unknown) {
-    //     log::error("Unknown key name: {} (for group: {})", keyStr, group);
+    //     Log.e("textparsing", "Unknown key name: {} (for group: {})", keyStr, group);
     //     return std::nullopt;
     // }
 

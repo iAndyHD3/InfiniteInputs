@@ -1,5 +1,7 @@
 #include <Geode/modify/UILayer.hpp>
+#include "BetterGeodeLogs.hpp"
 #include "GJBaseGameLayer.hpp"
+
 
 using namespace geode::prelude;
 
@@ -32,7 +34,7 @@ class $modify(MyLayer, UILayer) {
         auto usedPos = block->m_isUIObject ? touchPos : layer->screenToGame(touchPos);
 
         bool touched = getObjectHitbox(block).containsPoint(usedPos);
-        log::debug("touched: {} {} {}", touched, usedPos.x, getObjectHitbox(block).getMinX());
+        Log.d("UILayer", "touched: {} {} {}", touched, usedPos.x, getObjectHitbox(block).getMinX());
         return touched;
     }
 

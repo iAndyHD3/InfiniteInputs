@@ -2,6 +2,7 @@
 # Rules
 
 - NEVER change the format string specified in TextParsing.cpp. It is key that these stay the same
+- NEVER use git commands unless explicitly asked to do some work that needs it.
 
 ## Building
 
