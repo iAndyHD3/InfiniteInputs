@@ -1,13 +1,16 @@
 #include "GJBaseGameLayer.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/binding/PlayLayer.hpp>
 #include <Geode/binding/TextGameObject.hpp>
 #include <Geode/cocos/CCDirector.h>
+#include <arc/prelude.hpp>
+#include <arc/runtime/Runtime.hpp>
 #include <enchantum/enchantum.hpp>
 #include <numbers>
 #include <scn/scan.h>
 #include "BetterGeodeLogs.hpp"
-#include "Geode/loader/Log.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "LevelKeys.hpp"
@@ -56,6 +59,8 @@ void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
     if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
         Log.i("gjbgl", "[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
         layer->spawnGroup(group->second);
+    } else {
+        Log.e("gjbl", "Could not find group to spawn on key: {}, size: {}", ETOSTRING(key), simpleKeyMap.size());
     }
 }
 
@@ -68,14 +73,7 @@ $override bool MyBaseLayer::init() {
 }
 
 $override void MyBaseLayer::update(float dt) {
-    auto fields = m_fields.self();
     // LOGI(fields->shouldRunUpdateLoop);
-    if (!isModActive()) {
-        return GJBaseGameLayer::update(dt);
-    }
-
-    updateLoop(dt);
-
     GJBaseGameLayer::update(dt);
 }
 
@@ -83,7 +81,9 @@ $override void MyBaseLayer::update(float dt) {
 void MyBaseLayer::delayedInit(float) {
 
     if (!m_isEditor) {
-        return scheduleOnce(schedule_selector(MyBaseLayer::setupKeybinds_step0), 0);
+        // return scheduleOnce(schedule_selector(MyBaseLayer::setupKeybinds_step0), 0);
+        setupKeybinds_step0(0);
+        return;
     }
 
     for (auto obj : CCArrayExt<GameObject*>(m_objects)) {
@@ -124,7 +124,6 @@ void MyBaseLayer::delayedInit(float) {
 
         break;
     }
-
     schedule(schedule_selector(MyBaseLayer::editorActiveHandlerLoop), 0);
 }
 
@@ -144,13 +143,16 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     }
     // stop playtest
     else if (fields->active && !inPlaytest) {
-        Log.i("gjbgl", "stop playtest?");
+        Log.i("gjbgl", "stop playtest? resetting all fields!");
         // default values of all fields again (cleared)
+
         *fields = MyBaseLayer::Fields();
     }
 }
 
 void MyBaseLayer::updateLoop(float) {
+
+
     auto fields = m_fields.self();
 
     for (const auto& o : fields->cursorFollowObjects) {
@@ -171,24 +173,32 @@ void MyBaseLayer::updateLoop(float) {
         moveObject(o, delta.x, delta.y, false);
     }
 
-    if (!fields->spawnedModLoaded) {
-        fields->spawnGroupSimple(LevelKeys::modLoaded);
-        fields->spawnedModLoaded = true;
-    }
+    // if (!fields->spawnedModLoaded) {
+    //     fields->spawnGroupSimple(LevelKeys::modLoaded);
+    //     fields->spawnedModLoaded = true;
+    // }
 }
 
+// PLAYLAYER START!
 void MyBaseLayer::resetLevelVariables() {
     GJBaseGameLayer::resetLevelVariables();
-    Log.i("gjbgl", "resetting");
 
     for (const auto& o : m_fields->cursorFollowObjects) {
         o->setLastPosition(o->getPosition());
     }
 }
 
-void MyBaseLayer::setupLevelStart(LevelSettingsObject* p0) {
-    GJBaseGameLayer::setupLevelStart(p0);
-    m_fields->spawnedModLoaded = false;
+void MyBaseLayer::spawnModLoadedGroups(float) {
+
+    Log.i("gjbgl", "Spawning mod load groupsm started: {}", m_started);
+    auto fields = m_fields.self();
+    fields->spawnGroupSimple(LevelKeys::modLoaded);
+
+#if defined(GEODE_IS_DESKTOP)
+    fields->spawnGroupSimple(LevelKeys::modLoadedPC);
+#elif defined(GEODE_IS_MOBILE)
+    fields->spawnGroupSimple(LevelKeys::modLoadedMobile);
+#endif
 }
 
 void MyBaseLayer::setupCursorGroup() {
@@ -209,6 +219,7 @@ void MyBaseLayer::setupCursorGroup() {
         }
     }
 }
+
 
 // true if correctly registered atleast one keybind
 bool MyBaseLayer::setupTextLabelKeys_step1() {
@@ -260,12 +271,7 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     return fields->addedAtleastOneKey;
 }
 
-bool MyBaseLayer::isModActive() {
-    if (!m_isEditor && !reinterpret_cast<PlayLayer*>(this)->m_started) {
-        return false;
-    }
-    return m_fields->active;
-}
+bool MyBaseLayer::isModActive() { return m_fields->active; }
 
 void MyBaseLayer::setupKeybinds_step0(float) {
     if (!setupTextLabelKeys_step1()) {
@@ -280,8 +286,13 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 
     setupCursorGroup();
 
-
     fields->active = true;
+
+    schedule(schedule_selector(MyBaseLayer::updateLoop));
+
+    if (m_isEditor) {
+        scheduleOnce(schedule_selector(MyBaseLayer::spawnModLoadedGroups), 0);
+    }
 }
 
 
@@ -325,3 +336,10 @@ void MyBaseLayer::spawnGroup(groupId id) {
     Log.i("gjbgl", "spawn group: {}", id);
     GJBaseGameLayer::spawnGroup(id, false, 0, gd::vector<int>(), 0, 0);
 }
+
+class $modify(PlayLayer) {
+    void resetLevel() {
+        PlayLayer::resetLevel();
+        scheduleOnce(schedule_selector(MyBaseLayer::spawnModLoadedGroups), 0);
+    }
+};

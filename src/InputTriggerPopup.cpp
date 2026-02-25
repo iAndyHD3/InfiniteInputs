@@ -290,7 +290,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     auto innerContainer = CCNode::create();
     innerContainer->setAnchorPoint({0.5f, 1.f});
     innerContainer->ignoreAnchorPointForPosition(false);
-    innerContainer->setPosition({mouseContainer->getContentWidth() * 0.5f, mouseContainer->getContentHeight() - 90.f});
+    innerContainer->setPosition(
+            {mouseContainer->getContentWidth() * 0.5f + 10, mouseContainer->getContentHeight() - 90.f});
     innerContainer->setContentHeight(105.f);
     innerContainer->setID("inner-container");
 
@@ -313,6 +314,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     innerContainer->addChild(createMouseToggler("Scroll Down", LevelKeys::wheelDown));
     innerContainer->addChild(createMouseToggler("Lock To Cursor", LevelKeys::cursor));
     innerContainer->addChild(createMouseToggler("Mod Loaded", LevelKeys::modLoaded));
+    innerContainer->addChild(createMouseToggler("Mod Loaded Mobile", LevelKeys::modLoadedMobile));
+    innerContainer->addChild(createMouseToggler("Mod Loaded PC", LevelKeys::modLoadedPC));
     innerContainer->updateLayout();
     // NO more:
     mouseContainer->addChild(innerContainer);

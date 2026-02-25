@@ -7,9 +7,9 @@
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
+#include <Geode/modify/PlayLayer.hpp>
 #include "../LevelKeys.hpp"
 #include "../TextParsing.hpp"
-
 
 
 using namespace geode::prelude;
@@ -24,19 +24,22 @@ struct KeyActionMapKey {
 };
 
 namespace std {
-    template <> struct hash<ClickAction> {
+    template <>
+    struct hash<ClickAction> {
         std::size_t operator()(const ClickAction& k) const {
             auto hasher = std::hash<int>();
-            return hasher(k.collisionBlockId) ^ hasher(k.groupIdCursorEnter) ^ hasher(k.groupIdCursorExit) ^ hasher(k.groupIdCursorUp);
+            return hasher(k.collisionBlockId) ^ hasher(k.groupIdCursorEnter) ^ hasher(k.groupIdCursorExit) ^
+                   hasher(k.groupIdCursorUp);
         }
     };
 
-    template <> struct hash<KeyActionMapKey> {
+    template <>
+    struct hash<KeyActionMapKey> {
         std::size_t operator()(const KeyActionMapKey& k) const {
             return std::hash<LevelKeys>()(k.key) ^ std::hash<bool>()(k.keyDown);
         }
     };
-}
+} // namespace std
 
 struct ClickActionData {
     CollisionBlock* collblock = nullptr;
@@ -59,11 +62,13 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         std::vector<ClickActionData> clickActions;
 
         bool spawnedModLoaded = false;
+        bool spawnedModLoadedPC = false;
+        bool spawnedModLoadedMobile = false;
         bool active = false;
         bool addedAtleastOneKey = false;
         bool oldFormatFound = false;
 
-        //cache
+        // cache
         MyBaseLayer* layer = nullptr;
 
         std::vector<GameObject*> cursorFollowObjects;
@@ -89,6 +94,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     $override void update(float);
 
 
+    // void sortSectionVector();
     void delayedInit(float);
 
     static std::vector<std::string_view> getAllTextsFromLabels(GJBaseGameLayer* pl);
@@ -99,10 +105,12 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
     void updateLoop(float);
 
+    void spawnModLoadedGroups(float);
+
 
     void resetLevelVariables();
 
-    void setupLevelStart(LevelSettingsObject* p0);
+    // void setupLevelStart(LevelSettingsObject* p0);
 
     void setupText(std::string_view t);
 
@@ -122,5 +130,4 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     cocos2d::CCPoint screenToGame(const cocos2d::CCPoint& screenPos);
 
     void spawnGroup(groupId id);
-
 };

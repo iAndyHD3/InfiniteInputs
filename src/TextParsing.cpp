@@ -71,7 +71,9 @@ bool SimpleKeyAction::isSimpleKey(LevelKeys e) {
         case LevelKeys::wheelUp:
         case LevelKeys::wheelDown:
         case LevelKeys::cursor:
-        case LevelKeys::modLoaded: return true;
+        case LevelKeys::modLoaded:
+        case LevelKeys::modLoadedMobile:
+        case LevelKeys::modLoadedPC: return true;
     }
 }
 

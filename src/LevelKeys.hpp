@@ -73,7 +73,9 @@ enum class LevelKeys {
     wheelDown,
 
     cursor,
-    modLoaded
+    modLoaded,
+    modLoadedPC,
+    modLoadedMobile
 };
 
 struct LevelKeyBinding {
