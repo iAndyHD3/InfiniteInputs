@@ -42,7 +42,7 @@ class $modify(MyLayer, UILayer) {
         auto usedPos = block->m_isUIObject ? touchPos : layer->screenToGame(touchPos);
 
         bool touched = getObjectHitbox(block).containsPoint(usedPos);
-        Log.d("UILayer", "touched: {} {} {}", touched, usedPos.x, getObjectHitbox(block).getMinX());
+        // Log.d("UILayer", "touched: {} {} {}", touched, usedPos.x, getObjectHitbox(block).getMinX());
         return touched;
     }
 
@@ -57,7 +57,7 @@ class $modify(MyLayer, UILayer) {
 
         if (lastCameraPos == gs.m_cameraPosition && lastCameraAngle == gs.m_cameraAngle &&
             lastCameraZoom == gs.m_cameraZoom) {
-            Log.i("UILayer", "skipping extra move check!");
+            // Log.i("UILayer", "skipping extra move check!");
             return;
         }
 
@@ -65,7 +65,7 @@ class $modify(MyLayer, UILayer) {
         lastCameraAngle = gs.m_cameraAngle;
         lastCameraZoom = gs.m_cameraZoom;
 
-        Log.d("UILayer", "in update");
+        // Log.d("UILayer", "in update");
         for (auto& [touch, actionData] : m_fields->claimedTouches) {
             if (actionData->collblock->m_isUIObject)
                 continue;
@@ -98,7 +98,7 @@ class $modify(MyLayer, UILayer) {
 
                 actionData.taken = true;
                 m_fields->claimedTouches.emplace(touch, &actionData);
-                Log.i("UILayer", "scheduling");
+                // Log.i("UILayer", "scheduling");
                 schedule(schedule_selector(MyLayer::updateNonUILayerTouches));
                 return true;
             }
@@ -202,7 +202,6 @@ class $modify(MyLayer, UILayer) {
             }
 
             claimedTouches.erase(it);
-            Log.i("UILayer", "claimedTouches, size: {}", claimedTouches.size());
             if (claimedTouches.empty()) {
                 unschedule(schedule_selector(MyLayer::updateNonUILayerTouches));
             }
