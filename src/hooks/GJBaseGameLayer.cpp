@@ -196,7 +196,9 @@ void MyBaseLayer::spawnModLoadedGroups(float) {
 
 #if defined(GEODE_IS_DESKTOP)
     fields->spawnGroupSimple(LevelKeys::modLoadedPC);
-#elif defined(GEODE_IS_MOBILE)
+#endif
+
+#if defined(GEODE_IS_MOBILE)
     fields->spawnGroupSimple(LevelKeys::modLoadedMobile);
 #endif
 }
