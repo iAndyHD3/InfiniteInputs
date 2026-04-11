@@ -155,7 +155,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     m_keyboardToggler.tabNodes.push_back(keyboardContainer);
 
     auto& kbdata = getKeyboardData();
-    keyboardContainer->addChild(createIntegerInput("Group ID: ", &kbdata.m_keyAction.group, {50, 20}));
+    keyboardContainer->addChild(createIntegerInput("Group ID:", &kbdata.m_keyAction.group, {50, 20}));
 
     auto row1Menu = createKeyboardMenu(2.f, 70, 1);
 
@@ -282,18 +282,19 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     mouseContainer->setID("mouse-container");
     m_mainLayer->addChild(mouseContainer);
 
-    auto mouseGroupIDInput = createIntegerInput("Group ID: ", &m_mouseTabData.group, {50, 20});
+    auto mouseGroupIDInput = createIntegerInput("Group ID:", &m_mouseTabData.group, {50, 20});
     mouseContainer->addChild(mouseGroupIDInput);
 
-    
     reaction::action([mouseGroupIDInput, this]() {
-        auto tab = m_currentActionTab.get();
-        if(tab != Tab::Mouse) return;
+        auto tab = m_currentActionTab();
         LevelKeys key = m_mouseTabData.key();
+
+        if(tab != Tab::Mouse) return;
+
         bool isItemIdKey = key == LevelKeys::deltaX || key == LevelKeys::deltaY || key == LevelKeys::mouseX || key == LevelKeys::mouseY;
         auto label = (CCLabelBMFont*)mouseGroupIDInput->getChildByID("group-input-label");
         if(label) {
-            label->setString(isItemIdKey ? "Item ID" : "Group ID");          
+            label->setString(isItemIdKey ? "Item ID:" : "Group ID:");          
         }
     });
 
@@ -375,6 +376,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
         Log.i("popup", "is special: {}", isSpecialKey);
         mouseOnReleaseLabel->setVisible(isSpecialKey);
         mouseOnReleaseToggle->setVisible(isSpecialKey);
+
         Log.i("popup", "mouse release toggle is visible: {}", mouseOnReleaseToggle->isVisible());
     });
 
