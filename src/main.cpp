@@ -19,6 +19,7 @@ void onScrollInput(float x, float y) {
 
 $execute {
 
+    
     KeyboardInputEvent()
             .listen(+[](const geode::KeyboardInputData& event) {
                 if (event.action == KeyboardInputData::Action::Repeat)

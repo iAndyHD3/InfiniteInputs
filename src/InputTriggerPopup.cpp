@@ -8,9 +8,9 @@
 #include "BetterGeodeLogs.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
-#include "Geode/loader/Loader.hpp"
-#include "Geode/ui/General.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/ui/Popup.hpp"
+#include "Geode/ui/TextInput.hpp"
 #include "Geode/utils/ZStringView.hpp"
 #include "Geode/utils/general.hpp"
 #include "LevelKeys.hpp"
@@ -282,8 +282,20 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     mouseContainer->setID("mouse-container");
     m_mainLayer->addChild(mouseContainer);
 
+    auto mouseGroupIDInput = createIntegerInput("Group ID: ", &m_mouseTabData.group, {50, 20});
+    mouseContainer->addChild(mouseGroupIDInput);
 
-    mouseContainer->addChild(createIntegerInput("Group ID: ", &m_mouseTabData.group, {50, 20}));
+    
+    reaction::action([mouseGroupIDInput, this]() {
+        auto tab = m_currentActionTab.get();
+        if(tab != Tab::Mouse) return;
+        LevelKeys key = m_mouseTabData.key();
+        bool isItemIdKey = key == LevelKeys::deltaX || key == LevelKeys::deltaY || key == LevelKeys::mouseX || key == LevelKeys::mouseY;
+        auto label = (CCLabelBMFont*)mouseGroupIDInput->getChildByID("group-input-label");
+        if(label) {
+            label->setString(isItemIdKey ? "Item ID" : "Group ID");          
+        }
+    });
 
     m_mouseToggler.tabNodes.push_back(mouseContainer);
 
@@ -292,8 +304,9 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     innerContainer->ignoreAnchorPointForPosition(false);
     innerContainer->setPosition(
             {mouseContainer->getContentWidth() * 0.5f + 10, mouseContainer->getContentHeight() - 90.f});
-    innerContainer->setContentHeight(105.f);
+    innerContainer->setContentHeight(140.f);
     innerContainer->setID("inner-container");
+    mouseContainer->addChild(innerContainer);
 
     auto innerContainerLayout = ColumnLayout::create();
     innerContainerLayout->setGrowCrossAxis(true);
@@ -313,13 +326,16 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     innerContainer->addChild(createMouseToggler("Scroll Up", LevelKeys::wheelUp));
     innerContainer->addChild(createMouseToggler("Scroll Down", LevelKeys::wheelDown));
     innerContainer->addChild(createMouseToggler("Lock To Cursor", LevelKeys::cursor));
+    innerContainer->addChild(createMouseToggler("Mouse X", LevelKeys::mouseX));
+    innerContainer->addChild(createMouseToggler("Mouse Y", LevelKeys::mouseY));
+    innerContainer->addChild(createMouseToggler("Mouse Delta X", LevelKeys::deltaX));
+    innerContainer->addChild(createMouseToggler("Mouse Delta Y", LevelKeys::deltaY));
     innerContainer->addChild(createMouseToggler("Mod Loaded", LevelKeys::modLoaded));
     innerContainer->addChild(createMouseToggler("Mod Loaded Mobile", LevelKeys::modLoadedMobile));
     innerContainer->addChild(createMouseToggler("Mod Loaded PC", LevelKeys::modLoadedPC));
     innerContainer->updateLayout();
-    // NO more:
-    mouseContainer->addChild(innerContainer);
-    // instead:
+
+
     auto mouseOnReleaseToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [this](CCMenuItemToggler* toggler) {
                 m_mouseTabData.keyDown = !m_mouseTabData.keyDown;
@@ -656,14 +672,17 @@ CCNode* InputTriggerPopup::createIntegerInput(const char* labelText, int* valueP
     groupInputBG->setContentSize({70, 30});
     groupInputBG->setZOrder(-1);
     groupInputBG->setOpacity(100);
+    groupInputBG->setID("group-input-bg");
     groupInputContainer->addChild(groupInputBG);
 
     auto groupInputLabel = CCLabelBMFont::create(labelText, "goldFont.fnt");
     groupInputLabel->setScale(0.56f);
     groupInputLabel->setAnchorPoint({0.5f, 0.f});
+    groupInputLabel->setID("group-input-label");
     groupInputContainer->addChild(groupInputLabel);
 
     auto input = geode::TextInput::create(48, "Num");
+    input->setID("group-input");
     if (*valuePtr > 0) {
         input->setString(geode::utils::numToString(*valuePtr));
     }
@@ -705,6 +724,7 @@ CCNode* InputTriggerPopup::createIntegerInput(const char* labelText, int* valueP
     auto menu = CCMenu::create();
     menu->setPosition({0, 0});
     menu->setContentSize(groupInputContainer->getContentSize());
+    menu->setID("integer-input-menu");
     menu->addChild(decrBtn);
     menu->addChild(incrBtn);
 

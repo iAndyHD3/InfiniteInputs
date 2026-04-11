@@ -78,6 +78,9 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         std::vector<ClickAction> clickActionAddQueue;
 
+        CCPoint lastMousePos;
+        bool shouldStopUpdatingMousePos = false;
+
 
         void addKeyBind(LevelKeys key, bool down, int groupId);
         void addClickAction(CollisionBlock* collision, ClickAction action);
@@ -91,7 +94,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
     $override bool init();
 
-    $override void update(float);
+    //$override void update(float);
 
 
     // void sortSectionVector();
@@ -104,6 +107,8 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     // void handleClick(alpha::dispatcher::TouchEvent* touch, bool down);
 
     void updateLoop(float);
+
+    void updateMouseDeltaKeys(float);
 
     void spawnModLoadedGroups(float);
 

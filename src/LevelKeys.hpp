@@ -72,6 +72,11 @@ enum class LevelKeys {
     wheelUp,
     wheelDown,
 
+    mouseX,
+    mouseY,
+    deltaX,
+    deltaY,
+
     cursor,
     modLoaded,
     modLoadedPC,

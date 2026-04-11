@@ -4,7 +4,6 @@
 #include <fmt/format.h>
 #include <string_view>
 #include <utility>
-#include "Geode/utils/StringBuffer.hpp"
 
 
 /**
@@ -25,30 +24,50 @@
  * Supports both `Log::i(...)` and `Log.i(...)` syntax.
  */
 
+// you need to set this in your build system
+#if !defined(BETTER_GEODE_LOGS_VAR_NAME)
+#define BETTER_GEODE_LOGS_VAR_NAME Log
+#endif
 
+namespace BetterGeodeLogs {
+
+//default if there is no setting like this so its good
+inline bool logsEnabled = geode::Mod::get()->getSettingValue<bool>("enable-logs");
 struct Log {
+
     template <typename... Args>
     static void i(std::string_view tag, fmt::format_string<Args...> fmt_str, Args&&... args) {
-        std::string full_fmt = fmt::format("[{}] {}", tag, fmt_str.get());
+        if(!logsEnabled) return;
 
+        std::string full_fmt = fmt::format("[{}] {}", tag, fmt_str.get());
         geode::log::info(fmt::runtime(full_fmt), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     static void e(std::string_view tag, fmt::format_string<Args...> fmt_str, Args&&... args) {
-        geode::log::error("[{}] {}", tag, fmt::format(fmt_str, std::forward<Args>(args)...));
+        if(!logsEnabled) return;
+
+        std::string full_fmt = fmt::format("[{}] {}", tag, fmt_str.get());
+        geode::log::error(fmt::runtime(full_fmt), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     static void w(std::string_view tag, fmt::format_string<Args...> fmt_str, Args&&... args) {
-        geode::log::warn("[{}] {}", tag, fmt::format(fmt_str, std::forward<Args>(args)...));
+        if(!logsEnabled) return;
+
+        std::string full_fmt = fmt::format("[{}] {}", tag, fmt_str.get());
+        geode::log::warn(fmt::runtime(full_fmt), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     static void d(std::string_view tag, fmt::format_string<Args...> fmt_str, Args&&... args) {
-        geode::log::debug("[{}] {}", tag, fmt::format(fmt_str, std::forward<Args>(args)...));
+        if(!logsEnabled) return;
+
+        std::string full_fmt = fmt::format("[{}] {}", tag, fmt_str.get());
+        geode::log::debug(fmt::runtime(full_fmt), std::forward<Args>(args)...);
     }
 };
 
-// Global instance allows both Log::i(...) and Log.i(...) syntax
-inline Log Log{};
+}
+
+inline BetterGeodeLogs::Log BETTER_GEODE_LOGS_VAR_NAME;

@@ -7,7 +7,6 @@
 #include <fmt/format.h>
 #include <scn/scan.h>
 #include "BetterGeodeLogs.hpp"
-#include "InputTriggerPopup.hpp"
 #include "LevelKeys.hpp"
 
 
@@ -71,6 +70,10 @@ bool SimpleKeyAction::isSimpleKey(LevelKeys e) {
         case LevelKeys::wheelUp:
         case LevelKeys::wheelDown:
         case LevelKeys::cursor:
+        case LevelKeys::deltaX:
+        case LevelKeys::deltaY:
+        case LevelKeys::mouseX:
+        case LevelKeys::mouseY:
         case LevelKeys::modLoaded:
         case LevelKeys::modLoadedMobile:
         case LevelKeys::modLoadedPC: return true;

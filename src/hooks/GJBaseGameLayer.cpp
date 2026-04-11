@@ -17,6 +17,7 @@
 #include "TextParsing.hpp"
 
 
+
 #define ETOSTRING(k) enchantum::to_string(k)
 
 static gd::vector<short> getGroupIDs(GameObject* obj) {
@@ -56,6 +57,9 @@ void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
 }
 
 void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
+    if (key == LevelKeys::deltaX || key == LevelKeys::deltaY) {
+        return;
+    }
     if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
         Log.i("gjbgl", "[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
         layer->spawnGroup(group->second);
@@ -72,10 +76,10 @@ $override bool MyBaseLayer::init() {
     return true;
 }
 
-$override void MyBaseLayer::update(float dt) {
-    // LOGI(fields->shouldRunUpdateLoop);
-    GJBaseGameLayer::update(dt);
-}
+// $override void MyBaseLayer::update(float dt) {
+//     // LOGI(fields->shouldRunUpdateLoop);
+//     GJBaseGameLayer::update(dt);
+// }
 
 
 void MyBaseLayer::delayedInit(float) {
@@ -295,8 +299,51 @@ void MyBaseLayer::setupKeybinds_step0(float) {
     if (m_isEditor) {
         scheduleOnce(schedule_selector(MyBaseLayer::spawnModLoadedGroups), 0);
     }
+
+    if (fields->simpleKeyMap.contains(LevelKeys::deltaX) || fields->simpleKeyMap.contains(LevelKeys::deltaY) ||
+        fields->simpleKeyMap.contains(LevelKeys::mouseX) || fields->simpleKeyMap.contains(LevelKeys::mouseY)) {
+        schedule(schedule_selector(MyBaseLayer::updateMouseDeltaKeys));
+    }
 }
 
+void MyBaseLayer::updateMouseDeltaKeys(float) {
+    auto fields = m_fields.self();
+    auto mousePos = getMousePos();
+
+    auto updateItem = [&](LevelKeys key, int value) {
+        auto it = fields->simpleKeyMap.find(key);
+        if (it != fields->simpleKeyMap.end()) {
+            int itemId = it->second;
+            Log.i("gjbgl", "Updating mouse delta key: {}, value: {}, group: {}", ETOSTRING(key), value, itemId);
+            m_effectManager->updateCountForItem(itemId, value);
+            this->updateCounters(itemId, value);
+        }
+    };
+
+    if (mousePos == fields->lastMousePos) {
+        if (fields->shouldStopUpdatingMousePos) {
+            return;
+        }
+        updateItem(LevelKeys::deltaX, 0);
+        updateItem(LevelKeys::deltaY, 0);
+        fields->shouldStopUpdatingMousePos = true;
+    } else {
+        fields->shouldStopUpdatingMousePos = false;
+    }
+
+    auto delta = mousePos - fields->lastMousePos;
+    fields->lastMousePos = mousePos;
+
+    // The delta is usually a very small float, so we multiply it to get a more reasonable integer value (cuz the item
+    // are ints)
+    int dx = static_cast<int>(delta.x * 10);
+    int dy = static_cast<int>(delta.y * 10);
+
+    updateItem(LevelKeys::deltaX, dx);
+    updateItem(LevelKeys::deltaY, dy);
+    updateItem(LevelKeys::mouseX, static_cast<int>(mousePos.x));
+    updateItem(LevelKeys::mouseY, static_cast<int>(mousePos.y));
+}
 
 void MyBaseLayer::handleScroll(float x, float y) {
     if (y == 0)

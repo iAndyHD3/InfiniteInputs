@@ -1,5 +1,5 @@
 {
-	"geode": "5.1.0",
+	"geode": "5.6.1",
 	"gd": {
 		"win": "2.2081",
 		"android": "2.2081",
@@ -26,6 +26,12 @@
 			"default": true,
 			"name": "Custom Trigger UI",
 			"description": "Disables the custom trigger UI. This provides access to edit the text labels directly. <cr>Disable this if you encounter any crashes while entering the editor</c>"
+		},
+		"enable-logs": {
+			"type": "bool",
+			"default": false,
+			"name": "Enable Logs",
+			"description": "Enables logging for the mod. This can be useful for debugging purposes."
 		}
 	},
 	"tags": [
