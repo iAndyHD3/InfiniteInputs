@@ -380,6 +380,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
         Log.i("popup", "mouse release toggle is visible: {}", mouseOnReleaseToggle->isVisible());
     });
 
+    // TOUCH TAB
+
     auto touchTabContainer = CCNode::create();
     touchTabContainer->setContentSize(m_mainLayer->getContentSize());
     touchTabContainer->setAnchorPoint({0.f, 0.f});
@@ -500,7 +502,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 }
 
 
-CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKeys key) {
+CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKeys key, float buttonScale, float labelScale) {
     auto checkboxContainer = CCNode::create();
     checkboxContainer->ignoreAnchorPointForPosition(false);
     checkboxContainer->setAnchorPoint({0.f, 0.5f});
@@ -512,7 +514,7 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
     checkboxMenu->setID("checkbox-menu");
 
     auto& mouseData = getMouseData();
-    auto toggler = CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&mouseData, key](CCMenuItemToggler* self) {
+    auto toggler = CCMenuItemExt::createTogglerWithStandardSprites(buttonScale, [&mouseData, key](CCMenuItemToggler* self) {
         updateButtonPressed(&mouseData.pressed, self);
         if (!self->isToggled()) {
             mouseData.key.value(key);
@@ -529,17 +531,17 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
     checkboxMenu->setContentSize(toggler->getContentSize());
 
     checkboxContainer->setContentHeight(checkboxMenu->getContentHeight());
-    checkboxMenu->setPosition({0.f, checkboxContainer->getContentHeight() * 0.5f});
+    checkboxMenu->setPosition({0.f, checkboxContainer->getContentHeight() / 2});
 
-    toggler->setPosition(checkboxMenu->getContentSize() * 0.5f);
+    toggler->setPosition(checkboxMenu->getContentSize() / 2);
 
     checkboxContainer->addChild(checkboxMenu);
 
     auto checkboxLabel = CCLabelBMFont::create(label.c_str(), "bigFont.fnt");
 
-    checkboxLabel->setScale(0.35f);
+    checkboxLabel->setScale(labelScale);
     checkboxLabel->setAnchorPoint({0.f, 0.5f});
-    checkboxLabel->setPosition({checkboxMenu->getContentWidth() + 10.f, checkboxContainer->getContentHeight() * 0.5f});
+    checkboxLabel->setPosition({checkboxMenu->getContentWidth() + 10.f, checkboxContainer->getContentHeight() / 2});
 
     checkboxContainer->addChild(checkboxLabel);
 

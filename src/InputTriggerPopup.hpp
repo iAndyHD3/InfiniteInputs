@@ -29,7 +29,7 @@ protected:
     bool init(TextGameObject* textObject);
     void onClose(CCObject* sender) override;
 
-    CCNode* createMouseToggler(const std::string& label, LevelKeys key);
+    CCNode* createMouseToggler(const std::string& label, LevelKeys key, float buttonScale = 0.55f, float labelScale = 0.35f);
     CCMenuItemToggler* createTabToggler(const std::string& label, Tab tab);
     CCMenuItemToggler* createKeyboardToggler(LevelKeys key, float width = 40, const std::string& labelOverride = "");
     CCMenu* createKeyboardMenu(float gap, float yOffset, int row);
