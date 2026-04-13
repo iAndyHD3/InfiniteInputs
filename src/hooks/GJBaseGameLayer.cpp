@@ -207,8 +207,8 @@ void MyBaseLayer::spawnModLoadedGroups(float) {
 
     auto windowSize = m_uiLayer->getContentSize();
 
-    fields->updateItemIdWithSimpleKey(this, LevelKeys::windowWidth, static_cast<int>(windowSize.width));
-    fields->updateItemIdWithSimpleKey(this, LevelKeys::windowHeight, static_cast<int>(windowSize.height));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::windowWidth, std::lrint(windowSize.width));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::windowHeight, std::lrint(windowSize.height));
 }
 
 void MyBaseLayer::setupCursorGroup() {
@@ -345,10 +345,10 @@ void MyBaseLayer::updateMouseDeltaKeys(float) {
     int dx = static_cast<int>(delta.x * 10);
     int dy = static_cast<int>(delta.y * 10);
 
-    fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaX, dx);
-    fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, dy);
-    fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseX, static_cast<int>(mousePos.x));
-    fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseY, static_cast<int>(mousePos.y));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaX, std::lrint(dx));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, std::lrint(dy));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseX, std::lrint(mousePos.x));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseY, std::lrint(mousePos.y));
     //Log.i("gjbgl", "Mouse moved, updating item ids");
 
 }
