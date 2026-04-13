@@ -273,7 +273,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     Log.i("popup", "KEY AFTER: {}", enchantum::to_string(getKeyboardData().m_keyAction.key));
 
-    // MOUSE
+    // MOUSE TAB
 
     auto mouseContainer = CCNode::create();
     mouseContainer->setContentSize(m_mainLayer->getContentSize());
@@ -291,10 +291,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
         if(tab != Tab::Mouse) return;
 
-        bool isItemIdKey = key == LevelKeys::deltaX || key == LevelKeys::deltaY || key == LevelKeys::mouseX || key == LevelKeys::mouseY;
-        auto label = (CCLabelBMFont*)mouseGroupIDInput->getChildByID("group-input-label");
-        if(label) {
-            label->setString(isItemIdKey ? "Item ID:" : "Group ID:");          
+        if(auto label = typeinfo_cast<CCLabelBMFont*>(mouseGroupIDInput->getChildByID("group-input-label"))) {
+            label->setString(SimpleKeyAction::isItemIdKey(key) ? "Item ID:" : "Group ID:");          
         }
     });
 
@@ -331,6 +329,8 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     innerContainer->addChild(createMouseToggler("Mouse Y", LevelKeys::mouseY));
     innerContainer->addChild(createMouseToggler("Mouse Delta X", LevelKeys::deltaX));
     innerContainer->addChild(createMouseToggler("Mouse Delta Y", LevelKeys::deltaY));
+    innerContainer->addChild(createMouseToggler("Window Width", LevelKeys::windowWidth));
+    innerContainer->addChild(createMouseToggler("Window Height", LevelKeys::windowHeight));
     innerContainer->addChild(createMouseToggler("Mod Loaded", LevelKeys::modLoaded));
     innerContainer->addChild(createMouseToggler("Mod Loaded Mobile", LevelKeys::modLoadedMobile));
     innerContainer->addChild(createMouseToggler("Mod Loaded PC", LevelKeys::modLoadedPC));

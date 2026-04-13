@@ -74,9 +74,23 @@ bool SimpleKeyAction::isSimpleKey(LevelKeys e) {
         case LevelKeys::deltaY:
         case LevelKeys::mouseX:
         case LevelKeys::mouseY:
+        case LevelKeys::windowWidth:
+        case LevelKeys::windowHeight:
         case LevelKeys::modLoaded:
         case LevelKeys::modLoadedMobile:
         case LevelKeys::modLoadedPC: return true;
+    }
+}
+
+bool SimpleKeyAction::isItemIdKey(LevelKeys e) {
+    switch (e) {
+        default: return false;
+        case LevelKeys::deltaX:
+        case LevelKeys::deltaY:
+        case LevelKeys::mouseX:
+        case LevelKeys::mouseY:
+        case LevelKeys::windowWidth:
+        case LevelKeys::windowHeight: return true;
     }
 }
 

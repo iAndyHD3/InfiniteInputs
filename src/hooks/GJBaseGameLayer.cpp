@@ -17,7 +17,6 @@
 #include "TextParsing.hpp"
 
 
-
 #define ETOSTRING(k) enchantum::to_string(k)
 
 static gd::vector<short> getGroupIDs(GameObject* obj) {
@@ -190,6 +189,7 @@ void MyBaseLayer::resetLevelVariables() {
     for (const auto& o : m_fields->cursorFollowObjects) {
         o->setLastPosition(o->getPosition());
     }
+    Log.i("gjbl", "Reset level variables, reset cursor follow objects' last position");
 }
 
 void MyBaseLayer::spawnModLoadedGroups(float) {
@@ -205,6 +205,11 @@ void MyBaseLayer::spawnModLoadedGroups(float) {
 #if defined(GEODE_IS_MOBILE)
     fields->spawnGroupSimple(LevelKeys::modLoadedMobile);
 #endif
+
+    auto windowSize = m_uiLayer->getContentSize();
+
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::windowWidth, static_cast<int>(windowSize.width));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::windowHeight, static_cast<int>(windowSize.height));
 }
 
 void MyBaseLayer::setupCursorGroup() {
@@ -306,26 +311,27 @@ void MyBaseLayer::setupKeybinds_step0(float) {
     }
 }
 
+
+void MyBaseLayer::Fields::updateItemIdWithSimpleKey(GJBaseGameLayer* layer, LevelKeys key, int value) {
+    auto it = simpleKeyMap.find(key);
+    if (it != simpleKeyMap.end()) {
+        int itemId = it->second;
+        // Log.i("gjbgl", "Updating mouse delta key: {}, value: {}, group: {}", ETOSTRING(key), value, itemId);
+        layer->m_effectManager->updateCountForItem(itemId, value);
+        layer->updateCounters(itemId, value);
+    }
+}
+
 void MyBaseLayer::updateMouseDeltaKeys(float) {
     auto fields = m_fields.self();
     auto mousePos = getMousePos();
-
-    auto updateItem = [&](LevelKeys key, int value) {
-        auto it = fields->simpleKeyMap.find(key);
-        if (it != fields->simpleKeyMap.end()) {
-            int itemId = it->second;
-            Log.i("gjbgl", "Updating mouse delta key: {}, value: {}, group: {}", ETOSTRING(key), value, itemId);
-            m_effectManager->updateCountForItem(itemId, value);
-            this->updateCounters(itemId, value);
-        }
-    };
 
     if (mousePos == fields->lastMousePos) {
         if (fields->shouldStopUpdatingMousePos) {
             return;
         }
-        updateItem(LevelKeys::deltaX, 0);
-        updateItem(LevelKeys::deltaY, 0);
+        fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaX, 0);
+        fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, 0);
         fields->shouldStopUpdatingMousePos = true;
     } else {
         fields->shouldStopUpdatingMousePos = false;
@@ -339,10 +345,10 @@ void MyBaseLayer::updateMouseDeltaKeys(float) {
     int dx = static_cast<int>(delta.x * 10);
     int dy = static_cast<int>(delta.y * 10);
 
-    updateItem(LevelKeys::deltaX, dx);
-    updateItem(LevelKeys::deltaY, dy);
-    updateItem(LevelKeys::mouseX, static_cast<int>(mousePos.x));
-    updateItem(LevelKeys::mouseY, static_cast<int>(mousePos.y));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaX, dx);
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, dy);
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseX, static_cast<int>(mousePos.x));
+    fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseY, static_cast<int>(mousePos.y));
 }
 
 void MyBaseLayer::handleScroll(float x, float y) {

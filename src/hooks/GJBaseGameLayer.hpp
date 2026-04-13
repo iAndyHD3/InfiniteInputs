@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Geode/binding/GJBaseGameLayer.hpp>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -67,6 +68,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         bool active = false;
         bool addedAtleastOneKey = false;
         bool oldFormatFound = false;
+        bool appliedWindowSize = false;
 
         // cache
         MyBaseLayer* layer = nullptr;
@@ -89,6 +91,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         void spawnGroupKeys(const KeyActionMapKey&);
         void spawnGroupSimple(LevelKeys key);
+        void updateItemIdWithSimpleKey(GJBaseGameLayer* layer, LevelKeys key, int itemId);
     };
 
 

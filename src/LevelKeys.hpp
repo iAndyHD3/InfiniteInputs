@@ -77,6 +77,9 @@ enum class LevelKeys {
     deltaX,
     deltaY,
 
+    windowWidth,
+    windowHeight,
+
     cursor,
     modLoaded,
     modLoadedPC,

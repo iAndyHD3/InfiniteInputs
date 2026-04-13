@@ -32,6 +32,7 @@ struct SimpleKeyAction {
 
     static std::optional<SimpleKeyAction> parse(std::string_view text);
     static bool isSimpleKey(LevelKeys);
+    static bool isItemIdKey(LevelKeys);
     std::string getLabel();
 };
 
