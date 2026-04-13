@@ -16,7 +16,6 @@
 #include "LevelKeys.hpp"
 #include "TextParsing.hpp"
 
-
 #define ETOSTRING(k) enchantum::to_string(k)
 
 static gd::vector<short> getGroupIDs(GameObject* obj) {
@@ -330,6 +329,7 @@ void MyBaseLayer::updateMouseDeltaKeys(float) {
         if (fields->shouldStopUpdatingMousePos) {
             return;
         }
+        //Log.i("gjbgl", "Mouse stopped moving, resetting delta keys to 0");
         fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaX, 0);
         fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, 0);
         fields->shouldStopUpdatingMousePos = true;
@@ -349,6 +349,8 @@ void MyBaseLayer::updateMouseDeltaKeys(float) {
     fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, dy);
     fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseX, static_cast<int>(mousePos.x));
     fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseY, static_cast<int>(mousePos.y));
+    //Log.i("gjbgl", "Mouse moved, updating item ids");
+
 }
 
 void MyBaseLayer::handleScroll(float x, float y) {

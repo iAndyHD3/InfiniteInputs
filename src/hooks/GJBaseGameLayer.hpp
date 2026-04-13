@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include <Geode/binding/EffectGameObject.hpp>
@@ -24,11 +24,11 @@ struct KeyActionMapKey {
     bool operator==(const KeyActionMapKey& other) const { return key == other.key && keyDown == other.keyDown; }
 };
 
-namespace std {
+namespace boost {
     template <>
     struct hash<ClickAction> {
         std::size_t operator()(const ClickAction& k) const {
-            auto hasher = std::hash<int>();
+            auto hasher = boost::hash<int>();
             return hasher(k.collisionBlockId) ^ hasher(k.groupIdCursorEnter) ^ hasher(k.groupIdCursorExit) ^
                    hasher(k.groupIdCursorUp);
         }
@@ -37,10 +37,10 @@ namespace std {
     template <>
     struct hash<KeyActionMapKey> {
         std::size_t operator()(const KeyActionMapKey& k) const {
-            return std::hash<LevelKeys>()(k.key) ^ std::hash<bool>()(k.keyDown);
+            return boost::hash<LevelKeys>()(k.key) ^ boost::hash<bool>()(k.keyDown);
         }
     };
-} // namespace std
+} // namespace boost
 
 struct ClickActionData {
     CollisionBlock* collblock = nullptr;
@@ -54,10 +54,10 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     using GJBaseGameLayer::spawnGroup;
     struct Fields {
 
-        std::unordered_map<KeyActionMapKey, groupId> keyMap;
+        boost::unordered_flat_map<KeyActionMapKey, groupId> keyMap;
 
         // SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow
-        std::unordered_map<LevelKeys, groupId> simpleKeyMap;
+        boost::unordered_flat_map<LevelKeys, groupId> simpleKeyMap;
 
         // only used as queue during initialization
         std::vector<ClickActionData> clickActions;

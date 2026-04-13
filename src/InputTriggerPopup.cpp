@@ -502,7 +502,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 }
 
 
-CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKeys key, float buttonScale, float labelScale) {
+CCNode* InputTriggerPopup::createMouseToggler(const char* label, LevelKeys key, float buttonScale, float labelScale) {
     auto checkboxContainer = CCNode::create();
     checkboxContainer->ignoreAnchorPointForPosition(false);
     checkboxContainer->setAnchorPoint({0.f, 0.5f});
@@ -537,7 +537,7 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
 
     checkboxContainer->addChild(checkboxMenu);
 
-    auto checkboxLabel = CCLabelBMFont::create(label.c_str(), "bigFont.fnt");
+    auto checkboxLabel = CCLabelBMFont::create(label, "bigFont.fnt");
 
     checkboxLabel->setScale(labelScale);
     checkboxLabel->setAnchorPoint({0.f, 0.5f});
@@ -555,11 +555,11 @@ CCNode* InputTriggerPopup::createMouseToggler(const std::string& label, LevelKey
     return checkboxContainer;
 }
 
-CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label, Tab tab) {
+CCMenuItemToggler* InputTriggerPopup::createTabToggler(const char* label, Tab tab) {
     auto onSpr = CCScale9Sprite::create("GJ_button_02.png");
     auto offSpr = CCScale9Sprite::create("GJ_button_04.png");
 
-    auto keyLabelOn = CCLabelBMFont::create(label.c_str(), "bigFont.fnt");
+    auto keyLabelOn = CCLabelBMFont::create(label, "bigFont.fnt");
     keyLabelOn->setScale(0.5f);
 
     onSpr->setContentSize({keyLabelOn->getScaledContentWidth() + 20, keyLabelOn->getScaledContentHeight() + 10});
@@ -567,7 +567,7 @@ CCMenuItemToggler* InputTriggerPopup::createTabToggler(const std::string& label,
 
     keyLabelOn->setPosition(onSpr->getContentSize() * 0.5f + CCPoint{0.f, 1.f});
 
-    auto keyLabelOff = CCLabelBMFont::create(label.c_str(), "bigFont.fnt");
+    auto keyLabelOff = CCLabelBMFont::create(label, "bigFont.fnt");
     keyLabelOff->setScale(0.5f);
 
     offSpr->setContentSize({keyLabelOff->getScaledContentWidth() + 20, keyLabelOff->getScaledContentHeight() + 10});
@@ -593,13 +593,7 @@ InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::
     auto offSpr = CCScale9Sprite::create("GJ_button_04.png");
     offSpr->setContentSize({width, 40});
 
-    std::string keyStr;
-    if (labelOverride.empty()) {
-        keyStr = std::string(fixKeyName(enchantum::to_string(key)));
-        utils::string::toUpperIP(keyStr);
-    } else {
-        keyStr = labelOverride;
-    }
+    std::string keyStr = labelOverride.empty() ? std::string(fixKeyName(enchantum::to_string(key))) : std::move(labelOverride);
 
     auto keyLabelOn = CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
     keyLabelOn->setScale(0.5f);

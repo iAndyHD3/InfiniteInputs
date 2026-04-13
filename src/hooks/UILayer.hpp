@@ -18,7 +18,7 @@ class $modify(MyLayer, UILayer) {
             bool operator()(CCTouch* lhs, CCTouch* rhs) const { return lhs->getID() == rhs->getID(); }
         };
 
-        std::unordered_map<CCTouch*, ClickActionData*, TouchHasher, TouchEquality> claimedTouches;
+        boost::unordered_flat_map<CCTouch*, ClickActionData*, TouchHasher, TouchEquality> claimedTouches;
     };
 
     // Helper to safely retrieve the bounding box of a collision block.
@@ -73,12 +73,6 @@ class $modify(MyLayer, UILayer) {
         }
     }
 
-    bool init(GJBaseGameLayer* layer) {
-        if (!UILayer::init(layer))
-            return false;
-        return true;
-    }
-
 #pragma region touch hooks
 
     bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
@@ -86,6 +80,11 @@ class $modify(MyLayer, UILayer) {
             return false;
 
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
+        auto layer_fields = layer->m_fields.self();
+        if (!layer_fields->active || layer_fields->clickActions.empty()) {
+            return true;
+        }
+
         auto& clickActions = layer->m_fields->clickActions;
 
         // Iterate through available actions to find one being touched.
@@ -108,73 +107,78 @@ class $modify(MyLayer, UILayer) {
     }
 
     void touchMoved(CCTouch* touch) {
-
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
-        auto& claimedTouches = m_fields->claimedTouches;
-        auto& clickActions = layer->m_fields->clickActions;
+        auto layer_fields = layer->m_fields.self();
+        auto& clickActions = layer_fields->clickActions;
 
+        if (!layer_fields->active || clickActions.empty())
+            return;
+
+        auto& claimedTouches = m_fields.self()->claimedTouches;
         auto it = claimedTouches.find(touch);
 
-        // --- Case 1: Touch is currently claimed by an action ---
-        if (it != claimedTouches.end()) {
-            ClickActionData* currentData = it->second;
-            bool isInside = isTouchInsideBlock(touch, currentData->collblock);
-
-            if (isInside && !currentData->calledEnter) {
-                layer->spawnGroup(currentData->action.groupIdCursorEnter);
-                currentData->calledEnter = true;
-                currentData->calledExit = false;
-            } else if (!isInside && !currentData->calledExit) {
-                layer->spawnGroup(currentData->action.groupIdCursorExit);
-                currentData->calledExit = true;
-                currentData->calledEnter = false;
-            }
-
-            // Stealing Logic: Only attempt to steal if we are currently outside the claimed button
-            // and have already triggered the Exit event.
-            else if (!isInside && currentData->action.allowStealFrom) {
-                // Check all other actions to see if we can steal one.
-                for (ClickActionData& candidateData : clickActions) {
-                    if (candidateData.action.stealTouches && !candidateData.taken) {
-                        bool touchesCandidate = isTouchInsideBlock(touch, candidateData.collblock);
-
-                        if (touchesCandidate) {
-                            // Enter the new target
-                            layer->spawnGroup(candidateData.action.groupIdCursorEnter);
-
-                            candidateData.taken = true;
-                            candidateData.calledEnter = true; // Mark as inside/entered
-                            candidateData.calledExit = false;
-
-                            // Release the old target
-                            currentData->taken = false;
-                            currentData->calledEnter = true; // Reset to default state
-                            currentData->calledExit = false;
-
-                            // Update the map to point to the new target
-                            it->second = &candidateData;
-
-                            // We found a new target, no need to check others
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        // --- Case 2: Touch is not claimed, try to "steal" a new action mid-drag ---
-        else {
-            for (ClickActionData& actionData : clickActions) {
-                if (actionData.taken)
+        // -------------------------------------------------------------------------
+        // Case 2: Touch is unclaimed — pick up a steal-eligible action mid-drag
+        // -------------------------------------------------------------------------
+        if (it == claimedTouches.end()) {
+            for (ClickActionData& data : clickActions) {
+                if (data.taken || !data.action.stealTouches)
+                    continue;
+                if (!isTouchInsideBlock(touch, data.collblock))
                     continue;
 
-                // Only objects configured to steal touches can be picked up here.
-                if (actionData.action.stealTouches && isTouchInsideBlock(touch, actionData.collblock)) {
-                    layer->spawnGroup(actionData.action.groupIdCursorEnter);
-
-                    actionData.taken = true;
-                    claimedTouches.emplace(touch, &actionData);
-                }
+                layer->spawnGroup(data.action.groupIdCursorEnter);
+                data.taken = true;
+                claimedTouches.emplace(touch, &data);
             }
+            return;
+        }
+
+        // -------------------------------------------------------------------------
+        // Case 1: Touch is already claimed — handle enter/exit events
+        // -------------------------------------------------------------------------
+        ClickActionData* current = it->second;
+        bool isInside = isTouchInsideBlock(touch, current->collblock);
+
+        // Trigger enter event when touch re-enters the claimed button's bounds
+        if (isInside && !current->calledEnter) {
+            layer->spawnGroup(current->action.groupIdCursorEnter);
+            current->calledEnter = true;
+            current->calledExit = false;
+        }
+        // Trigger exit event when touch leaves the claimed button's bounds
+        else if (!isInside && !current->calledExit) {
+            layer->spawnGroup(current->action.groupIdCursorExit);
+            current->calledExit = true;
+            current->calledEnter = false;
+        }
+
+        // Steal logic: only runs when outside the current button and it permits stealing
+        if (isInside || !current->action.allowStealFrom)
+            return;
+
+        for (ClickActionData& candidate : clickActions) {
+            // Skip actions that don't accept stolen touches or are already taken
+            if (!candidate.action.stealTouches || candidate.taken)
+                continue;
+            // Skip if the touch isn't over this candidate
+            if (!isTouchInsideBlock(touch, candidate.collblock))
+                continue;
+
+            // Claim the new target and fire its enter event
+            layer->spawnGroup(candidate.action.groupIdCursorEnter);
+            candidate.taken = true;
+            candidate.calledEnter = true;
+            candidate.calledExit = false;
+
+            // Release the old target and reset its state
+            current->taken = false;
+            current->calledEnter = true;
+            current->calledExit = false;
+
+            // Redirect the touch claim to the new target and stop searching
+            it->second = &candidate;
+            break;
         }
     }
     void ccTouchMoved(CCTouch* touch, CCEvent* event) {
@@ -186,6 +190,11 @@ class $modify(MyLayer, UILayer) {
         UILayer::ccTouchEnded(touch, event);
 
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
+        auto layer_fields = layer->m_fields.self();
+        if (!layer_fields->active || layer_fields->clickActions.empty()) {
+            return;
+        }
+
         auto& claimedTouches = m_fields->claimedTouches;
 
         if (auto it = claimedTouches.find(touch); it != claimedTouches.end()) {
