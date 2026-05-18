@@ -1,6 +1,7 @@
 #include "GJBaseGameLayer.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/binding/PlatformToolbox.hpp>
 #include <Geode/binding/PlayLayer.hpp>
 #include <Geode/binding/TextGameObject.hpp>
 #include <Geode/cocos/CCDirector.h>
@@ -64,6 +65,14 @@ void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
     } else {
         Log.e("gjbl", "Could not find group to spawn on key: {}, size: {}", ETOSTRING(key), simpleKeyMap.size());
     }
+}
+
+bool MyBaseLayer::Fields::hasAnyMouseKeyActive() {
+    return cursorFollowGroupId != -1 || 
+        simpleKeyMap.contains(LevelKeys::mouseX) ||
+        simpleKeyMap.contains(LevelKeys::mouseY) ||
+        simpleKeyMap.contains(LevelKeys::x) ||
+        simpleKeyMap.contains(LevelKeys::y);
 }
 
 $override bool MyBaseLayer::init() {
@@ -219,6 +228,7 @@ void MyBaseLayer::setupCursorGroup() {
         return;
     int cursorGroupId = it->second;
 
+    PlatformToolbox::toggleLockCursor(false);
 
     Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", cursorGroupId);
     fields->cursorFollowGroupId = cursorGroupId;
@@ -289,7 +299,6 @@ void MyBaseLayer::setupKeybinds_step0(float) {
         return;
     }
 
-
     auto fields = m_fields.self();
 
     fields->layer = this;
@@ -307,6 +316,7 @@ void MyBaseLayer::setupKeybinds_step0(float) {
     if (fields->simpleKeyMap.contains(LevelKeys::deltaX) || fields->simpleKeyMap.contains(LevelKeys::deltaY) ||
         fields->simpleKeyMap.contains(LevelKeys::mouseX) || fields->simpleKeyMap.contains(LevelKeys::mouseY)) {
         schedule(schedule_selector(MyBaseLayer::updateMouseDeltaKeys));
+        PlatformToolbox::toggleLockCursor(false);
     }
 }
 
