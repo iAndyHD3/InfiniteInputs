@@ -30,7 +30,7 @@ setup_geode_mod(${PROJECT_NAME})
 
 CPMAddPackage("gh:eliaskosunen/scnlib#4b8a740")
 CPMAddPackage("gh:lumia431/reaction#721f7f3")
-CPMAddPackage("gh:ZXShady/enchantum#2f7fff7")
+CPMAddPackage("gh:ZXShady/enchantum#57ad194")
 
 
 CPMAddPackage("gh:boostorg/predef#a2a5010")

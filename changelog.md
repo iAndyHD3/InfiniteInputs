@@ -1,3 +1,7 @@
+# 2.0.1
+
+- fix custom keybinds swallowing inputs 
+
 # 2.0.0
 
 - upgrade to geode v5

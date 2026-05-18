@@ -18,28 +18,26 @@ void onScrollInput(float x, float y) {
 }
 
 $execute {
-
-    
     KeyboardInputEvent()
             .listen(+[](const geode::KeyboardInputData& event) {
                 if (event.action == KeyboardInputData::Action::Repeat)
                     return geode::ListenerResult::Propagate;
                 onKeyInput(CocosKeyCodeToLevelKey(event.key), event.action == KeyboardInputData::Action::Press);
                 return ListenerResult::Propagate;
-            })
+            }, /*priority=*/ -100)
             .leak();
 
     MouseInputEvent()
             .listen(+[](const geode::MouseInputData& event) {
                 onKeyInput(GeodeMouseToLevelKeys(event.button), event.action == MouseInputData::Action::Press);
                 return ListenerResult::Propagate;
-            })
+            }, -100)
             .leak();
 
     ScrollWheelEvent()
             .listen(+[](double x, double y) {
                 onScrollInput(x, y);
                 return ListenerResult::Propagate;
-            })
+            }, -100)
             .leak();
 };
