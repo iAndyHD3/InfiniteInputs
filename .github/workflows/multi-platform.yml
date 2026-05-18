@@ -34,7 +34,7 @@ jobs:
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
-          sdk: nightly
+          sdk: stable
           combine: true
           target: ${{ matrix.config.target }}
 
