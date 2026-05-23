@@ -80,15 +80,34 @@ class $modify(MyLayer, UILayer) {
             return false;
 
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
-        auto layer_fields = layer->m_fields.self();
-        if (!layer_fields->active || layer_fields->clickActions.empty()) {
+        auto gf = layer->m_fields.self();
+
+        if (!gf->active) {
             return true;
         }
+        Log.i("UILayer", "Touch began with id: {}", touch->getID());
 
-        auto& clickActions = layer->m_fields->clickActions;
+        auto [first, last] = gf->touchActions.equal_range(touch->getID());
+        for (auto it = first; it != last; ++it) {
+            const TouchAction& action = it->second;
+            layer->spawnGroup(action.groupIdTouchDown);
+            layer->updateItemId(action.itemId_x, touch->getLocation().x);
+            layer->updateItemId(action.itemId_y, touch->getLocation().y);
+            layer->updateItemId(action.itemId_deltaX, touch->getDelta().x);
+            layer->updateItemId(action.itemId_deltaY, touch->getDelta().y);
+            Log.i("UILayer", "Touch down with touch action: {}, {}, {}, {}, {}", action.groupIdTouchDown,
+                  action.itemId_x, action.itemId_y, action.itemId_deltaX, action.itemId_deltaY);
+        }
 
-        // Iterate through available actions to find one being touched.
-        for (ClickActionData& actionData : clickActions) {
+        auto it = gf->touchFollowObjects.find(touch->getID());
+        if (it != gf->touchFollowObjects.end()) {
+            for (GameObject* obj : it->second) {
+                layer->moveObjectCorrectly(obj, touch->getLocation());
+            }
+        }
+
+        // button actions
+        for (ClickActionData& actionData : gf->clickActions) {
             if (actionData.taken)
                 continue;
 
@@ -106,13 +125,31 @@ class $modify(MyLayer, UILayer) {
         return true;
     }
 
+    // this is NOT the hook.
     void touchMoved(CCTouch* touch) {
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
-        auto layer_fields = layer->m_fields.self();
-        auto& clickActions = layer_fields->clickActions;
+        auto gf = layer->m_fields.self();
 
-        if (!layer_fields->active || clickActions.empty())
+        if (!gf->active)
             return;
+
+        auto [first, last] = gf->touchActions.equal_range(touch->getID());
+        for (auto it = first; it != last; ++it) {
+            const TouchAction& action = it->second;
+            layer->updateItemId(action.itemId_x, touch->getLocation().x);
+            layer->updateItemId(action.itemId_y, touch->getLocation().y);
+            layer->updateItemId(action.itemId_deltaX, touch->getDelta().x);
+            layer->updateItemId(action.itemId_deltaY, touch->getDelta().y);
+            Log.i("UILayer", "Touch moved with touch action: {}, {}, {}, {}, {}", action.groupIdTouchDown,
+                  action.itemId_x, action.itemId_y, action.itemId_deltaX, action.itemId_deltaY);
+        }
+
+        auto itobjs = gf->touchFollowObjects.find(touch->getID());
+        if (itobjs != gf->touchFollowObjects.end()) {
+            for (GameObject* obj : itobjs->second) {
+                layer->moveObjectCorrectly(obj, touch->getLocation());
+            }
+        }
 
         auto& claimedTouches = m_fields.self()->claimedTouches;
         auto it = claimedTouches.find(touch);
@@ -121,7 +158,7 @@ class $modify(MyLayer, UILayer) {
         // Case 2: Touch is unclaimed — pick up a steal-eligible action mid-drag
         // -------------------------------------------------------------------------
         if (it == claimedTouches.end()) {
-            for (ClickActionData& data : clickActions) {
+            for (ClickActionData& data : gf->clickActions) {
                 if (data.taken || !data.action.stealTouches)
                     continue;
                 if (!isTouchInsideBlock(touch, data.collblock))
@@ -157,7 +194,7 @@ class $modify(MyLayer, UILayer) {
         if (isInside || !current->action.allowStealFrom)
             return;
 
-        for (ClickActionData& candidate : clickActions) {
+        for (ClickActionData& candidate : gf->clickActions) {
             // Skip actions that don't accept stolen touches or are already taken
             if (!candidate.action.stealTouches || candidate.taken)
                 continue;
@@ -190,9 +227,21 @@ class $modify(MyLayer, UILayer) {
         UILayer::ccTouchEnded(touch, event);
 
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
-        auto layer_fields = layer->m_fields.self();
-        if (!layer_fields->active || layer_fields->clickActions.empty()) {
+        auto gf = layer->m_fields.self();
+        if (!gf->active) {
             return;
+        }
+
+        auto [first, last] = gf->touchActions.equal_range(touch->getID());
+        for (auto it = first; it != last; ++it) {
+            const TouchAction& action = it->second;
+            layer->spawnGroup(action.groupIdTouchUp);
+            layer->updateItemId(action.itemId_x, 0);
+            layer->updateItemId(action.itemId_y, 0);
+            layer->updateItemId(action.itemId_deltaX, 0);
+            layer->updateItemId(action.itemId_deltaY, 0);
+            Log.i("UILayer", "Touch up with touch action: {}, {}, {}, {}, {}", action.groupIdTouchUp, action.itemId_x,
+                  action.itemId_y, action.itemId_deltaX, action.itemId_deltaY);
         }
 
         auto& claimedTouches = m_fields->claimedTouches;

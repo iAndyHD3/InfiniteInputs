@@ -36,7 +36,22 @@ struct SimpleKeyAction {
     std::string getLabel();
 };
 
-using II_ObjectAction = std::variant<KeyAction, SimpleKeyAction, ClickAction>;
+struct TouchAction {
+    int touch_id;
+    int groupIdLockObjectsToTouch;
+    int groupIdTouchDown;
+    int groupIdTouchUp;
+    int itemId_x;
+    int itemId_y;
+    int itemId_deltaX;
+    int itemId_deltaY;
+
+    static std::optional<TouchAction> parse(std::string_view text);
+    std::string getLabel();
+};
+
+
+using II_ObjectAction = std::variant<KeyAction, SimpleKeyAction, ClickAction, TouchAction>;
 
 std::optional<II_ObjectAction> parseObjectString(std::string_view t);
 

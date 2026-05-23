@@ -2,6 +2,10 @@
 
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_map.hpp>
+#include <boost/unordered/unordered_map_fwd.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
+
 #include <string_view>
 #include <vector>
 
@@ -62,6 +66,9 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         // only used as queue during initialization
         std::vector<ClickActionData> clickActions;
 
+        boost::unordered_multimap</*touchID=*/int, TouchAction> touchActions;
+        boost::unordered_flat_map</*touchID=*/int, boost::unordered_flat_set<GameObject*>> touchFollowObjects;
+
         bool spawnedModLoaded = false;
         bool spawnedModLoadedPC = false;
         bool spawnedModLoadedMobile = false;
@@ -91,7 +98,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         void spawnGroupKeys(const KeyActionMapKey&);
         void spawnGroupSimple(LevelKeys key);
-        void updateItemIdWithSimpleKey(GJBaseGameLayer* layer, LevelKeys key, int itemId);
+        void updateItemIdWithSimpleKey(MyBaseLayer* layer, LevelKeys key, int itemId);
 
         bool hasAnyMouseKeyActive();
     };
@@ -140,4 +147,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     cocos2d::CCPoint screenToGame(const cocos2d::CCPoint& screenPos);
 
     void spawnGroup(groupId id);
+
+    void updateItemId(int itemId, int newValue);
+    void moveObjectCorrectly(GameObject* obj, CCPoint to);
 };

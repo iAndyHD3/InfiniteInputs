@@ -115,9 +115,36 @@ std::optional<II_ObjectAction> parseObjectString(std::string_view t) {
     if (auto result = ClickAction::parse(t)) {
         return result;
     }
+    if (auto result = TouchAction::parse(t)) {
+        return result;
+    }
     return std::nullopt;
 }
 
+std::optional<TouchAction> TouchAction::parse(std::string_view t) {
+    if (auto result = scn::scan<int, int, int, int, int, int, int, int>(t, "inf_inp:4 {} {} {} {} {} {} {} {}")) {
+        auto& [touch_id, groupIdLockObjectsToTouch, groupIdTouchDown, groupIdTouchUp, itemId_x, itemId_y, itemId_deltaX, itemId_deltaY] = result->values();
+            //inf_inp:4 0 10 11 12 13 14 15 16
+            //inf_inp:4 1 20 21 22 23 24 25 26
+        return TouchAction{
+                touch_id,
+                groupIdLockObjectsToTouch,
+                groupIdTouchDown,
+                groupIdTouchUp,
+                itemId_x,
+                itemId_y,
+                itemId_deltaX,
+                itemId_deltaY};
+    }
+    Log.e("textparsing", "Could not parse touch action: {}", t);
+    return std::nullopt;
+}
+
+std::string TouchAction::getLabel() {
+    return fmt::format(
+            "inf_inp:4 {} {} {} {} {} {} {}", touch_id, groupIdLockObjectsToTouch, groupIdTouchDown, groupIdTouchUp, itemId_x, itemId_y,
+            itemId_deltaX, itemId_deltaY);
+}
 
 /*
 OLD FORMAT

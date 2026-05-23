@@ -1,6 +1,7 @@
 #include "GJBaseGameLayer.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/PlatformToolbox.hpp>
 #include <Geode/binding/PlayLayer.hpp>
 #include <Geode/binding/TextGameObject.hpp>
@@ -68,11 +69,9 @@ void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
 }
 
 bool MyBaseLayer::Fields::hasAnyMouseKeyActive() {
-    return cursorFollowGroupId != -1 || 
-        simpleKeyMap.contains(LevelKeys::mouseX) ||
-        simpleKeyMap.contains(LevelKeys::mouseY) ||
-        simpleKeyMap.contains(LevelKeys::x) ||
-        simpleKeyMap.contains(LevelKeys::y);
+    return cursorFollowGroupId != -1 || simpleKeyMap.contains(LevelKeys::mouseX) ||
+           simpleKeyMap.contains(LevelKeys::mouseY) || simpleKeyMap.contains(LevelKeys::x) ||
+           simpleKeyMap.contains(LevelKeys::y);
 }
 
 $override bool MyBaseLayer::init() {
@@ -161,6 +160,20 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     }
 }
 
+void MyBaseLayer::moveObjectCorrectly(GameObject* o, CCPoint to) {
+        CCPoint layerObjPos;
+
+        if (o->m_isUIObject) {
+            layerObjPos = o->getRealPosition();
+        } else {
+            layerObjPos = this->convertToNodeSpace(o->getRealPosition());
+            to = screenToGame(to);
+        }
+
+        auto delta = to - layerObjPos;
+        moveObject(o, delta.x, delta.y, false);
+}
+
 void MyBaseLayer::updateLoop(float) {
 
 
@@ -168,20 +181,7 @@ void MyBaseLayer::updateLoop(float) {
 
     for (const auto& o : fields->cursorFollowObjects) {
         // LOGI(o->m_objectID, o->m_isUIObject, o->getRealPosition());
-
-        CCPoint layerObjPos;
-        CCPoint layerMousePos;
-
-        if (o->m_isUIObject) {
-            layerObjPos = o->getRealPosition();
-            layerMousePos = getMousePos();
-        } else {
-            layerObjPos = this->convertToNodeSpace(o->getRealPosition());
-            layerMousePos = screenToGame(getMousePos());
-        }
-
-        auto delta = layerMousePos - layerObjPos;
-        moveObject(o, delta.x, delta.y, false);
+        moveObjectCorrectly(o, geode::cocos::getMousePos());
     }
 
     // if (!fields->spawnedModLoaded) {
@@ -220,30 +220,10 @@ void MyBaseLayer::spawnModLoadedGroups(float) {
     fields->updateItemIdWithSimpleKey(this, LevelKeys::windowHeight, std::lrint(windowSize.height));
 }
 
-void MyBaseLayer::setupCursorGroup() {
-    auto fields = m_fields.self();
-
-    auto it = fields->simpleKeyMap.find(LevelKeys::cursor);
-    if (it == fields->simpleKeyMap.end())
-        return;
-    int cursorGroupId = it->second;
-
-    PlatformToolbox::toggleLockCursor(false);
-
-    Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", cursorGroupId);
-    fields->cursorFollowGroupId = cursorGroupId;
-    fields->cursorFollowObjects.clear();
-    for (const auto& o : CCArrayExt<GameObject*>(m_objects)) {
-        if (hasGroup(o, cursorGroupId)) {
-            fields->cursorFollowObjects.push_back(o);
-        }
-    }
-}
-
 
 // true if correctly registered atleast one keybind
 bool MyBaseLayer::setupTextLabelKeys_step1() {
-    auto fields = m_fields.self();
+    auto f = m_fields.self();
 
     // parse all labels
     for (const auto& obj : m_objects->asExt<GameObject*>()) {
@@ -251,11 +231,13 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
             std::string_view t = static_cast<TextGameObject*>(obj)->m_text;
             if (auto parsed = parseObjectString(t)) {
                 if (KeyAction* label = std::get_if<KeyAction>(&*parsed)) {
-                    fields->keyMap.emplace(KeyActionMapKey{label->key, label->keyDown}, label->group);
+                    f->keyMap.emplace(KeyActionMapKey{label->key, label->keyDown}, label->group);
                 } else if (SimpleKeyAction* label = std::get_if<SimpleKeyAction>(&*parsed)) {
-                    fields->simpleKeyMap.emplace(label->key, label->group);
+                    f->simpleKeyMap.emplace(label->key, label->group);
                 } else if (ClickAction* action = std::get_if<ClickAction>(&*parsed)) {
-                    m_fields->clickActionAddQueue.push_back(std::move(*action));
+                    f->clickActionAddQueue.push_back(std::move(*action));
+                } else if (TouchAction* action = std::get_if<TouchAction>(&*parsed)) {
+                    f->touchActions.insert({action->touch_id, std::move(*action)});
                 }
             } else {
                 Log.e("gjbgl", "Failed to parse label: {}", static_cast<TextGameObject*>(obj)->m_text);
@@ -263,32 +245,65 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
         }
     }
 
-    for (const auto& obj : m_objects->asExt<CollisionBlock*>()) {
+    
+    int cursorGroupId = -1;
+    auto it = f->simpleKeyMap.find(LevelKeys::cursor);
+    if (it != f->simpleKeyMap.end()) {
+        cursorGroupId = it->second;
+        PlatformToolbox::toggleLockCursor(false);
+
+        Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", cursorGroupId);
+        f->cursorFollowGroupId = cursorGroupId;
+        f->cursorFollowObjects.clear();
+    }
+
+    boost::unordered_flat_map<int, boost::unordered_flat_set<int>> touchIdToFollowGroupIds;
+    for(const auto& [touchId, action] : f->touchActions) {
+        touchIdToFollowGroupIds[touchId].insert(action.groupIdLockObjectsToTouch);
+    }
+
+    for (const auto& obj : m_objects->asExt<GameObject*>()) {
         if (obj->m_objectID == 1816) {
-            for (const auto& clickaction : fields->clickActionAddQueue) {
-                if (clickaction.collisionBlockId == obj->m_itemID) {
+            for (const auto& clickaction : f->clickActionAddQueue) {
+                if (clickaction.collisionBlockId == ((EffectGameObject*)(obj))->m_itemID) {
                     // Log.i("gjbgl", "{}", obj);
                     Log.i("gjbgl", "{}", obj);
-                    fields->clickActions.emplace_back(obj, std::move(clickaction));
+                    f->clickActions.emplace_back(((EffectGameObject*)(obj)), std::move(clickaction));
+                }
+            }
+        }
+        //this can be optimized but for now, its fine
+        if(cursorGroupId != -1 && hasGroup(obj, cursorGroupId)) {
+            f->cursorFollowObjects.push_back(obj);
+        }
+
+        //touch actions
+        for(const auto& touchIdAndGroupIds : touchIdToFollowGroupIds) {
+            int touchId = touchIdAndGroupIds.first;
+            const auto& groupIds = touchIdAndGroupIds.second;
+            for(const auto& groupId : groupIds) {
+                if(hasGroup(obj, groupId)) {
+                    f->touchFollowObjects[touchId].insert(obj);
                 }
             }
         }
     }
-    fields->clickActionAddQueue.clear();
+
+    f->clickActionAddQueue.clear();
 
 
-    Log.i("gjbgl", "Added {} down keys", fields->keyMap.size());
-    Log.i("gjbgl", "Added {} simple keys", fields->simpleKeyMap.size());
-    Log.i("gjbgl", "Added {} click keys", fields->clickActions.size());
-    Log.i("gjbgl", "Button Objects: {}", fields->clickActions.size());
-    Log.i("gjbgl", "Cursor Group: {}", fields->cursorFollowGroupId);
+    Log.i("gjbgl", "Added {} down keys", f->keyMap.size());
+    Log.i("gjbgl", "Added {} simple keys", f->simpleKeyMap.size());
+    Log.i("gjbgl", "Added {} button actions", f->clickActions.size());
+    Log.i("gjbgl", "Added {} touch actions", f->touchActions.size());
+    Log.i("gjbgl", "Cursor Group: {}", f->cursorFollowGroupId);
     // Log.i("gjbgl", "Wheel Up Group: {}", fields->wheelUpGroup);
     // Log.i("gjbgl", "Wheel Down Group: {}", fields->wheelDownGroup);
 
-    fields->addedAtleastOneKey =
-            !fields->keyMap.empty() || !fields->simpleKeyMap.empty() || !fields->clickActions.empty();
+    f->addedAtleastOneKey =
+            !f->keyMap.empty() || !f->simpleKeyMap.empty() || !f->clickActions.empty() || !f->touchActions.empty();
 
-    return fields->addedAtleastOneKey;
+    return f->addedAtleastOneKey;
 }
 
 bool MyBaseLayer::isModActive() { return m_fields->active; }
@@ -303,7 +318,6 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 
     fields->layer = this;
 
-    setupCursorGroup();
 
     fields->active = true;
 
@@ -321,15 +335,14 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 }
 
 
-void MyBaseLayer::Fields::updateItemIdWithSimpleKey(GJBaseGameLayer* layer, LevelKeys key, int value) {
+void MyBaseLayer::Fields::updateItemIdWithSimpleKey(MyBaseLayer* layer, LevelKeys key, int value) {
     auto it = simpleKeyMap.find(key);
     if (it != simpleKeyMap.end()) {
         int itemId = it->second;
-        // Log.i("gjbgl", "Updating mouse delta key: {}, value: {}, group: {}", ETOSTRING(key), value, itemId);
-        layer->m_effectManager->updateCountForItem(itemId, value);
-        layer->updateCounters(itemId, value);
+        layer->updateItemId(itemId, value);
     }
 }
+
 
 void MyBaseLayer::updateMouseDeltaKeys(float) {
     auto fields = m_fields.self();
@@ -339,7 +352,7 @@ void MyBaseLayer::updateMouseDeltaKeys(float) {
         if (fields->shouldStopUpdatingMousePos) {
             return;
         }
-        //Log.i("gjbgl", "Mouse stopped moving, resetting delta keys to 0");
+        // Log.i("gjbgl", "Mouse stopped moving, resetting delta keys to 0");
         fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaX, 0);
         fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, 0);
         fields->shouldStopUpdatingMousePos = true;
@@ -359,8 +372,7 @@ void MyBaseLayer::updateMouseDeltaKeys(float) {
     fields->updateItemIdWithSimpleKey(this, LevelKeys::deltaY, std::lrint(dy));
     fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseX, std::lrint(mousePos.x));
     fields->updateItemIdWithSimpleKey(this, LevelKeys::mouseY, std::lrint(mousePos.y));
-    //Log.i("gjbgl", "Mouse moved, updating item ids");
-
+    // Log.i("gjbgl", "Mouse moved, updating item ids");
 }
 
 void MyBaseLayer::handleScroll(float x, float y) {
@@ -402,6 +414,12 @@ cocos2d::CCPoint MyBaseLayer::screenToGame(const cocos2d::CCPoint& screenPos) {
 void MyBaseLayer::spawnGroup(groupId id) {
     Log.i("gjbgl", "spawn group: {}", id);
     GJBaseGameLayer::spawnGroup(id, false, 0, gd::vector<int>(), 0, 0);
+}
+
+
+void MyBaseLayer::updateItemId(int itemId, int newValue) {
+    m_effectManager->updateCountForItem(itemId, newValue);
+    updateCounters(itemId, newValue);
 }
 
 class $modify(PlayLayer) {
