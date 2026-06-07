@@ -33,7 +33,8 @@ class $modify(MyLayer, UILayer) {
     // Determines if a touch intersects a specific collision block.
     // Handles coordinate conversion for UI vs Game objects.
     bool isTouchInsideBlock(CCTouch* touch, CollisionBlock* block) {
-        if (!block->m_isActivated)
+        
+        if (!block || !block->m_isActivated)
             return false;
 
         auto touchPos = touch->getLocation();
@@ -232,6 +233,8 @@ class $modify(MyLayer, UILayer) {
     }
 
     void ccTouchEnded(CCTouch* touch, CCEvent* event) {
+
+
         UILayer::ccTouchEnded(touch, event);
 
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
