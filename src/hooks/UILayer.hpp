@@ -1,6 +1,7 @@
 #include <Geode/modify/UILayer.hpp>
 #include "BetterGeodeLogs.hpp"
 #include "GJBaseGameLayer.hpp"
+#include "Geode/loader/Log.hpp"
 
 
 using namespace geode::prelude;
@@ -46,8 +47,15 @@ class $modify(MyLayer, UILayer) {
         return touched;
     }
 
+    //reason for this:
+    // If a touch starts on a non-UI object and the camera moves, the object's location will be updated according to the new camera position, which can cause it to no longer intersect with the originally touched object. By checking for this and updating the touch's position accordingly, we can ensure that the touch continues to interact with the intended object even if the camera moves.
     void updateNonUILayerTouches(float) {
+        auto bs = static_cast<MyBaseLayer*>(m_gameLayer);
 
+        if(bs->m_isEditor && bs->m_playbackMode != PlaybackMode::Playing) {
+            unschedule(schedule_selector(MyLayer::updateNonUILayerTouches));
+            return;
+        }
         // check if camera moved...
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
         auto& gs = layer->m_gameState;

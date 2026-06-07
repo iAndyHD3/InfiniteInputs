@@ -11,3 +11,7 @@ Once you have finished a batch of your changes you can try to get the list of er
 
 When you are completely done with your work and the previous commands succeeds, run the following to open geometry dash.: 
 `geode run --background`
+
+# Codebase Exploring
+
+The mod's code is located in the /src directory. avoid making code search in the root folder, as that will pollute the context too much. mainly avoid the build* folders
