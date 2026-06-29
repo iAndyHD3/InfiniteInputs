@@ -58,10 +58,11 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     using GJBaseGameLayer::spawnGroup;
     struct Fields {
 
-        boost::unordered_flat_map<KeyActionMapKey, groupId> keyMap;
+        boost::unordered_flat_map<KeyActionMapKey, boost::unordered_flat_set<groupId>> keyMap;
 
-        // SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow
-        boost::unordered_flat_map<LevelKeys, groupId> simpleKeyMap;
+        // SIMPLE KEY MAP: wheelUp, wheelDown, cursorFollow, mouseX, mouseY, deltaX, deltaY, windowWidth, windowHeight
+        //value can be group id or item id
+        boost::unordered_flat_map<LevelKeys, boost::unordered_flat_set<groupId>> simpleKeyMap;
 
         // only used as queue during initialization
         std::vector<ClickActionData> clickActions;
@@ -82,8 +83,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         std::vector<GameObject*> cursorFollowObjects;
 
-        /*SPECIAL ONLY ONE GROUP ID!!!*/
-        int cursorFollowGroupId = -1;
+        boost::unordered_flat_set<groupId> cursorFollowGroupIds;
 
         std::vector<ClickAction> clickActionAddQueue;
 
@@ -94,7 +94,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         void addKeyBind(LevelKeys key, bool down, int groupId);
         void addClickAction(CollisionBlock* collision, ClickAction action);
 
-        std::optional<groupId> getGroupId(const KeyActionMapKey&);
+        std::optional<boost::unordered_flat_set<groupId>> getGroupId(const KeyActionMapKey&);
 
         void spawnGroupKeys(const KeyActionMapKey&);
         void spawnGroupSimple(LevelKeys key);

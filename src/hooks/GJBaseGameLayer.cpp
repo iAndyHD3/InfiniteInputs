@@ -43,16 +43,18 @@ void MyBaseLayer::Fields::addKeyBind(LevelKeys key, bool down, int groupId) {
 }
 
 
-std::optional<groupId> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& key) {
-    auto groupid = keyMap.find(key);
-    return groupid != keyMap.end() ? std::optional<groupId>(groupid->second) : std::nullopt;
+std::optional<boost::unordered_flat_set<groupId>> MyBaseLayer::Fields::getGroupId(const KeyActionMapKey& key) {
+    auto groupids = keyMap.find(key);
+    return groupids != keyMap.end() ? std::optional<boost::unordered_flat_set<groupId>>(groupids->second) : std::nullopt;
 }
 
 
 void MyBaseLayer::Fields::spawnGroupKeys(const KeyActionMapKey& key) {
-    if (auto group = getGroupId(key)) {
-        Log.i("gjbgl", "KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", *group);
-        layer->spawnGroup(*group);
+    if (auto groups = getGroupId(key)) {
+        for (auto group : *groups) {
+            Log.i("gjbgl", "KEY: {}, {}, GROUP: {}", enchantum::to_string(key.key), key.keyDown ? "down" : "up", group);
+            layer->spawnGroup(group);
+        }
     }
 }
 
@@ -60,16 +62,18 @@ void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
     if (key == LevelKeys::deltaX || key == LevelKeys::deltaY) {
         return;
     }
-    if (auto group = simpleKeyMap.find(key); group != simpleKeyMap.end()) {
-        Log.i("gjbgl", "[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group->second);
-        layer->spawnGroup(group->second);
+    if (auto it = simpleKeyMap.find(key); it != simpleKeyMap.end()) {
+        for (auto group : it->second) {
+            Log.i("gjbgl", "[SIMPLE] KEY: {}, GROUP: {}", enchantum::to_string(key), group);
+            layer->spawnGroup(group);
+        }
     } else {
         Log.e("gjbl", "Could not find group to spawn on key: {}, size: {}", ETOSTRING(key), simpleKeyMap.size());
     }
 }
 
 bool MyBaseLayer::Fields::hasAnyMouseKeyActive() {
-    return cursorFollowGroupId != -1 || simpleKeyMap.contains(LevelKeys::mouseX) ||
+    return !cursorFollowGroupIds.empty() || simpleKeyMap.contains(LevelKeys::mouseX) ||
            simpleKeyMap.contains(LevelKeys::mouseY) || simpleKeyMap.contains(LevelKeys::x) ||
            simpleKeyMap.contains(LevelKeys::y);
 }
@@ -231,9 +235,9 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
             std::string_view t = static_cast<TextGameObject*>(obj)->m_text;
             if (auto parsed = parseObjectString(t)) {
                 if (KeyAction* label = std::get_if<KeyAction>(&*parsed)) {
-                    f->keyMap.emplace(KeyActionMapKey{label->key, label->keyDown}, label->group);
+                    f->keyMap[KeyActionMapKey{label->key, label->keyDown}].insert(label->group);
                 } else if (SimpleKeyAction* label = std::get_if<SimpleKeyAction>(&*parsed)) {
-                    f->simpleKeyMap.emplace(label->key, label->group);
+                    f->simpleKeyMap[label->key].insert(label->group);
                 } else if (ClickAction* action = std::get_if<ClickAction>(&*parsed)) {
                     f->clickActionAddQueue.push_back(std::move(*action));
                 } else if (TouchAction* action = std::get_if<TouchAction>(&*parsed)) {
@@ -246,15 +250,14 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     }
 
     
-    int cursorGroupId = -1;
     auto it = f->simpleKeyMap.find(LevelKeys::cursor);
     if (it != f->simpleKeyMap.end()) {
-        cursorGroupId = it->second;
+        f->cursorFollowGroupIds = it->second;
         PlatformToolbox::toggleLockCursor(false);
-
-        Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", cursorGroupId);
-        f->cursorFollowGroupId = cursorGroupId;
         f->cursorFollowObjects.clear();
+        for (auto g : f->cursorFollowGroupIds) {
+            Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", g);
+        }
     }
 
     boost::unordered_flat_map<int, boost::unordered_flat_set<int>> touchIdToFollowGroupIds;
@@ -272,9 +275,10 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
                 }
             }
         }
-        //this can be optimized but for now, its fine
-        if(cursorGroupId != -1 && hasGroup(obj, cursorGroupId)) {
-            f->cursorFollowObjects.push_back(obj);
+        for (auto cursorGroupId : f->cursorFollowGroupIds) {
+            if (hasGroup(obj, cursorGroupId)) {
+                f->cursorFollowObjects.push_back(obj);
+            }
         }
 
         //touch actions
@@ -296,7 +300,11 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     Log.i("gjbgl", "Added {} simple keys", f->simpleKeyMap.size());
     Log.i("gjbgl", "Added {} button actions", f->clickActions.size());
     Log.i("gjbgl", "Added {} touch actions", f->touchActions.size());
-    Log.i("gjbgl", "Cursor Group: {}", f->cursorFollowGroupId);
+    if (!f->cursorFollowGroupIds.empty()) {
+        for (auto g : f->cursorFollowGroupIds) {
+            Log.i("gjbgl", "Cursor Group: {}", g);
+        }
+    }
     // Log.i("gjbgl", "Wheel Up Group: {}", fields->wheelUpGroup);
     // Log.i("gjbgl", "Wheel Down Group: {}", fields->wheelDownGroup);
 
@@ -338,8 +346,9 @@ void MyBaseLayer::setupKeybinds_step0(float) {
 void MyBaseLayer::Fields::updateItemIdWithSimpleKey(MyBaseLayer* layer, LevelKeys key, int value) {
     auto it = simpleKeyMap.find(key);
     if (it != simpleKeyMap.end()) {
-        int itemId = it->second;
-        layer->updateItemId(itemId, value);
+        for (auto itemId : it->second) {
+            layer->updateItemId(itemId, value);
+        }
     }
 }
 
