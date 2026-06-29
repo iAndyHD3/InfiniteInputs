@@ -433,7 +433,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     stealTouchesToggle->setPosition({m_mainLayer->getContentWidth() * 0.25f - 40.f, 30.f});
     stealTouchesToggle->setID("steal-touches-toggle");
 
-    auto stealTouchesLabel = CCLabelBMFont::create("Steal\nTouches", "bigFont.fnt");
+    auto stealTouchesLabel = CCLabelBMFont::create("Claim Touch", "bigFont.fnt");
     stealTouchesLabel->setScale(0.35f);
     stealTouchesLabel->setAnchorPoint({0.f, 0.5f});
     stealTouchesLabel->setPosition({m_mainLayer->getContentWidth() * 0.25f - 10.f, 30.f});
@@ -451,7 +451,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     allowStealFromToggle->setPosition({m_mainLayer->getContentWidth() * 0.75f - 10.f, 30.f});
     allowStealFromToggle->setID("allow-steal-from-toggle");
 
-    auto allowStealFromLabel = CCLabelBMFont::create("Allow Steal\nFrom Others", "bigFont.fnt");
+    auto allowStealFromLabel = CCLabelBMFont::create("Allow Claiming\nFrom Others", "bigFont.fnt");
     allowStealFromLabel->setScale(0.35f);
     allowStealFromLabel->setAnchorPoint({0.f, 0.5f});
     allowStealFromLabel->setPosition({m_mainLayer->getContentWidth() * 0.75f + 20.f, 30.f});
