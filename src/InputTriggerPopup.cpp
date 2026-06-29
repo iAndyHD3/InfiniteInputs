@@ -687,7 +687,7 @@ CCNode* InputTriggerPopup::createIntegerInput(const char* labelText, int* valueP
 
 
     input->setCommonFilter(geode::CommonFilter::Int);
-    input->setMaxCharCount(4);
+    input->setMaxCharCount(5);
     input->hideBG();
 
     input->setCallback([valuePtr](const std::string& str) {
