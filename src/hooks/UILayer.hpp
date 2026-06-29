@@ -22,12 +22,17 @@ class $modify(MyLayer, UILayer) {
         boost::unordered_flat_map<CCTouch*, boost::unordered_flat_set<ClickActionData*>, TouchHasher, TouchEquality> claimedTouches;
     };
 
-    // Helper to safely retrieve the bounding box of a collision block.
-    CCRect getObjectHitbox(CollisionBlock* block) {
-        if (OBB2D* box = block->getOrientedBox()) {
-            return box->getBoundingRect();
+    static bool isPointInOBB(const CCPoint& point, const std::array<CCPoint, 4>& corners) {
+        bool hasNeg = false, hasPos = false;
+        for (int i = 0; i < 4; i++) {
+            const auto& a = corners[i];
+            const auto& b = corners[(i + 1) % 4];
+            float cross = (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
+            if (cross < 0) hasNeg = true;
+            else if (cross > 0) hasPos = true;
+            if (hasNeg && hasPos) return false;
         }
-        return block->m_objectRect;
+        return true;
     }
 
     // Determines if a touch intersects a specific collision block.
@@ -43,9 +48,10 @@ class $modify(MyLayer, UILayer) {
         // UI objects use screen coordinates; game objects use world coordinates.
         auto usedPos = block->m_isUIObject ? touchPos : layer->screenToGame(touchPos);
 
-        bool touched = getObjectHitbox(block).containsPoint(usedPos);
-        // Log.d("UILayer", "touched: {} {} {}", touched, usedPos.x, getObjectHitbox(block).getMinX());
-        return touched;
+        if (OBB2D* box = block->getOrientedBox()) {
+            return isPointInOBB(usedPos, box->m_corners);
+        }
+        return block->m_objectRect.containsPoint(usedPos);
     }
 
     //reason for this:
