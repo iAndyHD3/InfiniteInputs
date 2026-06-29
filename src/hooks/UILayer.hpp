@@ -19,7 +19,7 @@ class $modify(MyLayer, UILayer) {
             bool operator()(CCTouch* lhs, CCTouch* rhs) const { return lhs->getID() == rhs->getID(); }
         };
 
-        boost::unordered_flat_map<CCTouch*, ClickActionData*, TouchHasher, TouchEquality> claimedTouches;
+        boost::unordered_flat_map<CCTouch*, boost::unordered_flat_set<ClickActionData*>, TouchHasher, TouchEquality> claimedTouches;
     };
 
     // Helper to safely retrieve the bounding box of a collision block.
@@ -75,10 +75,12 @@ class $modify(MyLayer, UILayer) {
         lastCameraZoom = gs.m_cameraZoom;
 
         // Log.d("UILayer", "in update");
-        for (auto& [touch, actionData] : m_fields->claimedTouches) {
-            if (actionData->collblock->m_isUIObject)
-                continue;
-            touchMoved(touch);
+        for (auto& [touch, actionDataSet] : m_fields->claimedTouches) {
+            bool hasNonUI = false;
+            for (auto* data : actionDataSet) {
+                if (!data->collblock->m_isUIObject) { hasNonUI = true; break; }
+            }
+            if (hasNonUI) touchMoved(touch);
         }
     }
 
@@ -124,10 +126,9 @@ class $modify(MyLayer, UILayer) {
                 layer->spawnGroup(actionData.action.groupIdCursorDown);
 
                 actionData.taken = true;
-                m_fields->claimedTouches.emplace(touch, &actionData);
+                m_fields->claimedTouches[touch].insert(&actionData);
                 // Log.i("UILayer", "scheduling");
                 schedule(schedule_selector(MyLayer::updateNonUILayerTouches));
-                return true;
             }
         }
 
@@ -175,56 +176,43 @@ class $modify(MyLayer, UILayer) {
 
                 layer->spawnGroup(data.action.groupIdCursorEnter);
                 data.taken = true;
-                claimedTouches.emplace(touch, &data);
+                claimedTouches[touch].insert(&data);
             }
             return;
         }
 
         // -------------------------------------------------------------------------
-        // Case 1: Touch is already claimed — handle enter/exit events
+        // Case 1: Touch is already claimed — handle enter/exit events for each
         // -------------------------------------------------------------------------
-        ClickActionData* current = it->second;
-        bool isInside = isTouchInsideBlock(touch, current->collblock);
+        auto& actionDataSet = it->second;
 
-        // Trigger enter event when touch re-enters the claimed button's bounds
-        if (isInside && !current->calledEnter) {
-            layer->spawnGroup(current->action.groupIdCursorEnter);
-            current->calledEnter = true;
-            current->calledExit = false;
+        for (auto* current : actionDataSet) {
+            bool isInside = isTouchInsideBlock(touch, current->collblock);
+
+            if (isInside && !current->calledEnter) {
+                layer->spawnGroup(current->action.groupIdCursorEnter);
+                current->calledEnter = true;
+                current->calledExit = false;
+            } else if (!isInside && !current->calledExit) {
+                layer->spawnGroup(current->action.groupIdCursorExit);
+                current->calledExit = true;
+                current->calledEnter = false;
+            }
         }
-        // Trigger exit event when touch leaves the claimed button's bounds
-        else if (!isInside && !current->calledExit) {
-            layer->spawnGroup(current->action.groupIdCursorExit);
-            current->calledExit = true;
-            current->calledEnter = false;
-        }
 
-        // Steal logic: only runs when outside the current button and it permits stealing
-        if (isInside || !current->action.allowStealFrom)
-            return;
-
+        // Steal logic: claim any untaken, stealable, intersected action
         for (ClickActionData& candidate : gf->clickActions) {
-            // Skip actions that don't accept stolen touches or are already taken
             if (!candidate.action.stealTouches || candidate.taken)
                 continue;
-            // Skip if the touch isn't over this candidate
             if (!isTouchInsideBlock(touch, candidate.collblock))
                 continue;
 
-            // Claim the new target and fire its enter event
             layer->spawnGroup(candidate.action.groupIdCursorEnter);
             candidate.taken = true;
             candidate.calledEnter = true;
             candidate.calledExit = false;
 
-            // Release the old target and reset its state
-            current->taken = false;
-            current->calledEnter = true;
-            current->calledExit = false;
-
-            // Redirect the touch claim to the new target and stop searching
-            it->second = &candidate;
-            break;
+            actionDataSet.insert(&candidate);
         }
     }
     void ccTouchMoved(CCTouch* touch, CCEvent* event) {
@@ -258,16 +246,16 @@ class $modify(MyLayer, UILayer) {
         auto& claimedTouches = m_fields->claimedTouches;
 
         if (auto it = claimedTouches.find(touch); it != claimedTouches.end()) {
-            ClickActionData* data = it->second;
+            for (auto* data : it->second) {
+                // Reset state for the next interaction
+                data->taken = false;
+                data->calledEnter = true;
+                data->calledExit = false;
 
-            // Reset state for the next interaction
-            data->taken = false;
-            data->calledEnter = true;
-            data->calledExit = false;
-
-            // Trigger Up event if released inside the button
-            if (isTouchInsideBlock(touch, data->collblock)) {
-                layer->spawnGroup(data->action.groupIdCursorUp);
+                // Trigger Up event if released inside the button
+                if (isTouchInsideBlock(touch, data->collblock)) {
+                    layer->spawnGroup(data->action.groupIdCursorUp);
+                }
             }
 
             claimedTouches.erase(it);
