@@ -142,7 +142,7 @@ std::optional<TouchAction> TouchAction::parse(std::string_view t) {
 
 std::string TouchAction::getLabel() {
     return fmt::format(
-            "inf_inp:4 {} {} {} {} {} {} {}", touch_id, groupIdLockObjectsToTouch, groupIdTouchDown, groupIdTouchUp, itemId_x, itemId_y,
+            "inf_inp:4 {} {} {} {} {} {} {} {}", touch_id, groupIdLockObjectsToTouch, groupIdTouchDown, groupIdTouchUp, itemId_x, itemId_y,
             itemId_deltaX, itemId_deltaY);
 }
 

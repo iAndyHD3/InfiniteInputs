@@ -23,6 +23,7 @@ protected:
     enum class Tab {
         Keyboard,
         Mouse,
+        Button,
         Touch,
     };
 
@@ -43,8 +44,12 @@ protected:
         CCMenuItemToggler* pressed = nullptr;
     };
 
-    struct TouchTabData {
+    struct ButtonTabData {
         ClickAction m_clickAction;
+    };
+
+    struct TouchTabData {
+        TouchAction m_touchAction;
     };
 
     struct MouseTabData {
@@ -65,15 +70,19 @@ protected:
 
     TabToggler m_keyboardToggler;
     TabToggler m_mouseToggler;
+    TabToggler m_buttonToggler;
     TabToggler m_touchToggler;
 
     KeyboardTabData m_keyboardTabData;
     MouseTabData m_mouseTabData;
+    ButtonTabData m_buttonTabData;
     TouchTabData m_touchTabData;
 
     KeyboardTabData& getKeyboardData() { return m_keyboardTabData; }
 
     MouseTabData& getMouseData() { return m_mouseTabData; }
+
+    ButtonTabData& getButtonData() { return m_buttonTabData; }
 
     TouchTabData& getTouchData() { return m_touchTabData; }
 
@@ -81,6 +90,7 @@ protected:
         switch (tab) {
             case Tab::Keyboard: return m_keyboardToggler;
             case Tab::Mouse: return m_mouseToggler;
+            case Tab::Button: return m_buttonToggler;
             case Tab::Touch: return m_touchToggler;
         }
     }

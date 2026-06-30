@@ -59,6 +59,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
                 return R"(Activates a <cg>Group ID</c> based on a <cy>key</c> action. This trigger works similarly to the UI trigger; it is processed at the start of the level, and cannot be spawned or toggled.
 <cp>Trigger On Release</c> activates the group on key or mouse release instead of press.)";
             case Tab::Mouse: return "Mouse";
+            case Tab::Button: return "Button";
             case Tab::Touch: return "Touch";
             default: return "Unknown Tab";
         }
@@ -100,6 +101,7 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     tabsMenu->addChild(createTabToggler("Keyboard", Tab::Keyboard));
     tabsMenu->addChild(createTabToggler("Mouse", Tab::Mouse));
+    tabsMenu->addChild(createTabToggler("Button", Tab::Button));
     tabsMenu->addChild(createTabToggler("Touch", Tab::Touch));
 
     tabsMenu->updateLayout();
@@ -130,7 +132,11 @@ bool InputTriggerPopup::init(TextGameObject* object) {
         selectedTab = (Tab::Mouse);
         Log.i("popup", "parsed mouse input");
     } else if (auto parsed = ClickAction::parse(object->m_text)) {
-        m_touchTabData.m_clickAction = std::move(*parsed);
+        m_buttonTabData.m_clickAction = std::move(*parsed);
+        selectedTab = (Tab::Button);
+        Log.i("popup", "parsed button input");
+    } else if (auto parsed = TouchAction::parse(object->m_text)) {
+        m_touchTabData.m_touchAction = std::move(*parsed);
         selectedTab = (Tab::Touch);
         Log.i("popup", "parsed touch input");
     } else {
@@ -380,56 +386,58 @@ bool InputTriggerPopup::init(TextGameObject* object) {
         Log.i("popup", "mouse release toggle is visible: {}", mouseOnReleaseToggle->isVisible());
     });
 
-    // TOUCH TAB
+    // BUTTON TAB
 
-    auto touchTabContainer = CCNode::create();
-    touchTabContainer->setContentSize(m_mainLayer->getContentSize());
-    touchTabContainer->setAnchorPoint({0.f, 0.f});
-    touchTabContainer->ignoreAnchorPointForPosition(false);
-    touchTabContainer->setID("touch-container");
+    auto buttonTabContainer = CCNode::create();
+    buttonTabContainer->setContentSize(m_mainLayer->getContentSize());
+    buttonTabContainer->setAnchorPoint({0.f, 0.f});
+    buttonTabContainer->ignoreAnchorPointForPosition(false);
+    buttonTabContainer->setID("button-container");
 
-    float ROW_LEFT_X = touchTabContainer->getContentWidth() / 4 - 15;
-    float ROW_RIGHT_X = ROW_LEFT_X + 150;
-    constexpr float Y_START = 120;
-    constexpr float Y_DIFFERENCE = 55;
+    float B_ROW_LEFT_X = buttonTabContainer->getContentWidth() / 4 - 15;
+    float B_ROW_RIGHT_X = B_ROW_LEFT_X + 150;
+    constexpr float B_Y_START = 120;
+    constexpr float B_Y_DIFFERENCE = 55;
 
-    auto row1Left = createIntegerInput(
-            "Collision: ", &m_touchTabData.m_clickAction.collisionBlockId,
-            {ROW_LEFT_X, touchTabContainer->getContentHeight() - Y_START});
+    auto& bd = getButtonData().m_clickAction;
 
-    auto row2Left = createIntegerInput(
-            "Group Down: ", &m_touchTabData.m_clickAction.groupIdCursorDown,
-            {ROW_LEFT_X, touchTabContainer->getContentHeight() - Y_START - Y_DIFFERENCE});
-    auto row2Right = createIntegerInput(
-            "Group Up: ", &m_touchTabData.m_clickAction.groupIdCursorUp,
-            {ROW_RIGHT_X, touchTabContainer->getContentHeight() - Y_START - Y_DIFFERENCE});
+    auto bRow1Left = createIntegerInput(
+            "Collision:", &bd.collisionBlockId,
+            {B_ROW_LEFT_X, buttonTabContainer->getContentHeight() - B_Y_START});
 
-    auto row3Left = createIntegerInput(
-            "Group Enter: ", &m_touchTabData.m_clickAction.groupIdCursorEnter,
-            {ROW_LEFT_X, touchTabContainer->getContentHeight() - Y_START - (Y_DIFFERENCE * 2)});
-    auto row3Right = createIntegerInput(
-            "Group Exit: ", &m_touchTabData.m_clickAction.groupIdCursorExit,
-            {ROW_RIGHT_X, touchTabContainer->getContentHeight() - Y_START - (Y_DIFFERENCE * 2)});
+    auto bRow2Left = createIntegerInput(
+            "Down Group:", &bd.groupIdCursorDown,
+            {B_ROW_LEFT_X, buttonTabContainer->getContentHeight() - B_Y_START - B_Y_DIFFERENCE});
+    auto bRow2Right = createIntegerInput(
+            "Up Group:", &bd.groupIdCursorUp,
+            {B_ROW_RIGHT_X, buttonTabContainer->getContentHeight() - B_Y_START - B_Y_DIFFERENCE});
 
-    touchTabContainer->addChild(row1Left);
-    touchTabContainer->addChild(row2Left);
-    touchTabContainer->addChild(row2Right);
-    touchTabContainer->addChild(row3Left);
-    touchTabContainer->addChild(row3Right);
+    auto bRow3Left = createIntegerInput(
+            "Enter Group:", &bd.groupIdCursorEnter,
+            {B_ROW_LEFT_X, buttonTabContainer->getContentHeight() - B_Y_START - (B_Y_DIFFERENCE * 2)});
+    auto bRow3Right = createIntegerInput(
+            "Exit Group:", &bd.groupIdCursorExit,
+            {B_ROW_RIGHT_X, buttonTabContainer->getContentHeight() - B_Y_START - (B_Y_DIFFERENCE * 2)});
 
-    auto boolsMenu = CCMenu::create();
-    boolsMenu->ignoreAnchorPointForPosition(false);
-    boolsMenu->setAnchorPoint({0.f, 0.f});
-    boolsMenu->setContentSize({m_mainLayer->getContentWidth(), 60.f});
-    boolsMenu->setPosition({0.f, 30.f});
-    boolsMenu->setID("bools-menu");
+    buttonTabContainer->addChild(bRow1Left);
+    buttonTabContainer->addChild(bRow2Left);
+    buttonTabContainer->addChild(bRow2Right);
+    buttonTabContainer->addChild(bRow3Left);
+    buttonTabContainer->addChild(bRow3Right);
+
+    auto bBoolsMenu = CCMenu::create();
+    bBoolsMenu->ignoreAnchorPointForPosition(false);
+    bBoolsMenu->setAnchorPoint({0.f, 0.f});
+    bBoolsMenu->setContentSize({m_mainLayer->getContentWidth(), 60.f});
+    bBoolsMenu->setPosition({0.f, 30.f});
+    bBoolsMenu->setID("button-bools-menu");
 
     auto stealTouchesToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&, this](CCMenuItemToggler* toggler) {
-                m_touchTabData.m_clickAction.stealTouches = !toggler->isToggled();
+                getButtonData().m_clickAction.stealTouches = !toggler->isToggled();
                 Log.i("popup", "steal touches toggle");
             });
-    stealTouchesToggle->toggle(m_touchTabData.m_clickAction.stealTouches);
+    stealTouchesToggle->toggle(bd.stealTouches);
     stealTouchesToggle->setPosition({m_mainLayer->getContentWidth() * 0.25f - 40.f, 30.f});
     stealTouchesToggle->setID("steal-touches-toggle");
 
@@ -439,15 +447,15 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     stealTouchesLabel->setPosition({m_mainLayer->getContentWidth() * 0.25f - 10.f, 30.f});
     stealTouchesLabel->setID("steal-touches-label");
 
-    boolsMenu->addChild(stealTouchesToggle);
-    boolsMenu->addChild(stealTouchesLabel);
+    bBoolsMenu->addChild(stealTouchesToggle);
+    bBoolsMenu->addChild(stealTouchesLabel);
 
     auto allowStealFromToggle =
             CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&, this](CCMenuItemToggler* toggler) {
-                m_touchTabData.m_clickAction.allowStealFrom = !toggler->isToggled();
+                getButtonData().m_clickAction.allowStealFrom = !toggler->isToggled();
                 Log.i("popup", "allow steal from toggle");
             });
-    allowStealFromToggle->toggle(m_touchTabData.m_clickAction.allowStealFrom);
+    allowStealFromToggle->toggle(bd.allowStealFrom);
     allowStealFromToggle->setPosition({m_mainLayer->getContentWidth() * 0.75f - 10.f, 30.f});
     allowStealFromToggle->setID("allow-steal-from-toggle");
 
@@ -457,20 +465,75 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     allowStealFromLabel->setPosition({m_mainLayer->getContentWidth() * 0.75f + 20.f, 30.f});
     allowStealFromLabel->setID("allow-steal-from-label");
 
-    boolsMenu->addChild(allowStealFromToggle);
-    boolsMenu->addChild(allowStealFromLabel);
+    bBoolsMenu->addChild(allowStealFromToggle);
+    bBoolsMenu->addChild(allowStealFromLabel);
 
-    touchTabContainer->addChild(boolsMenu);
+    buttonTabContainer->addChild(bBoolsMenu);
+
+    m_mainLayer->addChild(buttonTabContainer);
+    m_buttonToggler.tabNodes.push_back(buttonTabContainer);
+
+    // TOUCH TAB
+
+    auto touchTabContainer = CCNode::create();
+    touchTabContainer->setContentSize(m_mainLayer->getContentSize());
+    touchTabContainer->setAnchorPoint({0.f, 0.f});
+    touchTabContainer->ignoreAnchorPointForPosition(false);
+    touchTabContainer->setID("touch-container");
+
+    float LEFT_X = 25;
+    float RIGHT_LEFT_X = 190;
+    float RIGHT_RIGHT_X = 320;
+    constexpr float Y_START = 140;
+    constexpr float Y_DIFFERENCE = 52;
+
+    auto& td = getTouchData().m_touchAction;
+
+    auto touchIdInput = createIntegerInput(
+            "Touch ID:", &td.touch_id,
+            {LEFT_X, touchTabContainer->getContentHeight() - Y_START});
+    auto lockGroupInput = createIntegerInput(
+            "Lock Group:", &td.groupIdLockObjectsToTouch,
+            {LEFT_X, touchTabContainer->getContentHeight() - Y_START - Y_DIFFERENCE});
+
+    auto downGroupInput = createIntegerInput(
+            "Down Group:", &td.groupIdTouchDown,
+            {RIGHT_LEFT_X, touchTabContainer->getContentHeight() - Y_START});
+    auto upGroupInput = createIntegerInput(
+            "Up Group:", &td.groupIdTouchUp,
+            {RIGHT_RIGHT_X, touchTabContainer->getContentHeight() - Y_START});
+
+    auto itemXInput = createIntegerInput(
+            "Item ID X:", &td.itemId_x,
+            {RIGHT_LEFT_X, touchTabContainer->getContentHeight() - Y_START - Y_DIFFERENCE});
+    auto itemYInput = createIntegerInput(
+            "Item ID Y:", &td.itemId_y,
+            {RIGHT_RIGHT_X, touchTabContainer->getContentHeight() - Y_START - Y_DIFFERENCE});
+
+    auto deltaXInput = createIntegerInput(
+            "Delta X:", &td.itemId_deltaX,
+            {RIGHT_LEFT_X, touchTabContainer->getContentHeight() - Y_START - (Y_DIFFERENCE * 2)});
+    auto deltaYInput = createIntegerInput(
+            "Delta Y:", &td.itemId_deltaY,
+            {RIGHT_RIGHT_X, touchTabContainer->getContentHeight() - Y_START - (Y_DIFFERENCE * 2)});
+
+    touchTabContainer->addChild(touchIdInput);
+    touchTabContainer->addChild(lockGroupInput);
+    touchTabContainer->addChild(downGroupInput);
+    touchTabContainer->addChild(upGroupInput);
+    touchTabContainer->addChild(itemXInput);
+    touchTabContainer->addChild(itemYInput);
+    touchTabContainer->addChild(deltaXInput);
+    touchTabContainer->addChild(deltaYInput);
 
     m_mainLayer->addChild(touchTabContainer);
     m_touchToggler.tabNodes.push_back(touchTabContainer);
-    m_touchToggler.tabNodes.push_back(boolsMenu);
 
     reaction::action([this]() {
         Tab toggledTab = m_currentActionTab();
         Log.i("popup", "REACTION TOGGLED TAB: {}", enchantum::to_string(toggledTab));
 
-        for (auto& toggler : {std::ref(m_keyboardToggler), std::ref(m_mouseToggler), std::ref(m_touchToggler)}) {
+        for (auto& toggler : {std::ref(m_keyboardToggler), std::ref(m_mouseToggler), std::ref(m_buttonToggler), std::ref(m_touchToggler)}) {
             for (const auto& nodes : toggler.get().tabNodes) {
                 nodes->setVisible(false);
             }
@@ -479,6 +542,9 @@ bool InputTriggerPopup::init(TextGameObject* object) {
                 toggler.get().toggler->toggle(false);
                 toggler.get().toggler->setEnabled(true);
             } else if (toggledTab != Tab::Mouse && &toggler.get() == &m_mouseToggler) {
+                toggler.get().toggler->toggle(false);
+                toggler.get().toggler->setEnabled(true);
+            } else if (toggledTab != Tab::Button && &toggler.get() == &m_buttonToggler) {
                 toggler.get().toggler->toggle(false);
                 toggler.get().toggler->setEnabled(true);
             } else if (toggledTab != Tab::Touch && &toggler.get() == &m_touchToggler) {
@@ -765,7 +831,8 @@ void InputTriggerPopup::onClose(CCObject* sender) {
             }
             break;
         }
-        case Tab::Touch: label = getTouchData().m_clickAction.getLabel(); break;
+        case Tab::Button: label = getButtonData().m_clickAction.getLabel(); break;
+        case Tab::Touch: label = getTouchData().m_touchAction.getLabel(); break;
     }
     Log.i("popup", "saving: {}", label);
 
