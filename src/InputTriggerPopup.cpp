@@ -6,6 +6,7 @@
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
 #include "BetterGeodeLogs.hpp"
+#include "GlobalOverviewPopup.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/ui/Layout.hpp"
@@ -73,14 +74,17 @@ bool InputTriggerPopup::init(TextGameObject* object) {
 
     helpBtn->setPosition({18, m_mainLayer->getContentHeight() - 18});
 
-    m_buttonMenu->addChild(helpBtn);
-    m_buttonMenu->setID("button-menu");
+    auto overviewSpr = CCSprite::createWithSpriteFrameName("GJ_longBtn06_001.png");
+    auto overviewLabel = CCLabelBMFont::create("Overview", "bigFont.fnt");
+    overviewLabel->setScale(0.35f);
+    overviewLabel->setPosition(overviewSpr->getContentSize() * 0.5f);
+    overviewSpr->addChild(overviewLabel);
+
 
     auto okSpr = ButtonSprite::create("OK", 40, 0, 0.8, true, "goldFont.fnt", "GJ_button_01.png", 30.0);
     auto okBtn = CCMenuItemSpriteExtra::create(okSpr, this, menu_selector(InputTriggerPopup::onClose));
     okBtn->setPosition({m_mainLayer->getContentWidth() * 0.5f, 24});
     okBtn->setID("ok-button");
-
 
     m_buttonMenu->addChild(okBtn);
 
@@ -773,7 +777,7 @@ CCNode* InputTriggerPopup::createIntegerInput(const char* labelText, int* valueP
 
     auto updateUI = [input, valuePtr](int delta) {
         *valuePtr = std::clamp(*valuePtr + delta, 0, 9999);
-        input->setString(std::to_string(*valuePtr));
+        input->setString(geode::utils::numToString(*valuePtr));
     };
 
     auto decrBtn = CCMenuItemExt::createSpriteExtraWithFrameName(
@@ -809,6 +813,8 @@ void InputTriggerPopup::updateButtonPressed(CCMenuItemToggler** oldToggled, CCMe
 
     *oldToggled = newpressed;
 }
+
+
 
 void InputTriggerPopup::onClose(CCObject* sender) {
 
