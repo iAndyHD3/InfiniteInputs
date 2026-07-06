@@ -1,4 +1,5 @@
 #include "GJBaseGameLayer.hpp"
+#include "UILayer.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/binding/GameObject.hpp>
@@ -157,8 +158,11 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     }
     // stop playtest
     else if (fields->active && !inPlaytest) {
-        Log.i("gjbgl", "stop playtest? resetting all fields!");
-        // default values of all fields again (cleared)
+        // Clear claimed touches in UILayer to prevent dangling ClickActionData pointers
+        if (auto* uiLayer = static_cast<MyLayer*>(m_uiLayer)) {
+            uiLayer->m_fields->claimedTouches.clear();
+            uiLayer->unschedule(schedule_selector(MyLayer::updateNonUILayerTouches));
+        }
 
         *fields = MyBaseLayer::Fields();
     }

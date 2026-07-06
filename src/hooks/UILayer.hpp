@@ -20,6 +20,8 @@ class $modify(MyLayer, UILayer) {
         };
 
         boost::unordered_flat_map<CCTouch*, boost::unordered_flat_set<ClickActionData*>, TouchHasher, TouchEquality> claimedTouches;
+        bool processingCameraMove = false;
+        uintptr_t clickActionsDataAtInsert = 0;
     };
 
     static bool isPointInOBB(const CCPoint& point, const std::array<CCPoint, 4>& corners) {
@@ -80,14 +82,49 @@ class $modify(MyLayer, UILayer) {
         lastCameraAngle = gs.m_cameraAngle;
         lastCameraZoom = gs.m_cameraZoom;
 
-        // Log.d("UILayer", "in update");
+        // -- DIAG --
+        auto* gf = layer->m_fields.self();
+        auto* clickVec = gf ? &gf->clickActions : nullptr;
+        auto mapSize = m_fields->claimedTouches.size();
+        uintptr_t curDataPtr = clickVec ? reinterpret_cast<uintptr_t>(clickVec->data()) : 0;
+        bool reallocd = m_fields->clickActionsDataAtInsert != 0 && curDataPtr != m_fields->clickActionsDataAtInsert;
+        Log.i("UILayer", "DIAG ENTER: claimedTouches={}, clickActions(size={}, cap={}, data={:x}), dataAtInsert={:x}{}",
+            mapSize,
+            clickVec ? clickVec->size() : -1,
+            clickVec ? clickVec->capacity() : -1,
+            curDataPtr,
+            m_fields->clickActionsDataAtInsert,
+            reallocd ? " *** REALLOCATED ***" : "");
+
+        m_fields->processingCameraMove = true;
         for (auto& [touch, actionDataSet] : m_fields->claimedTouches) {
             bool hasNonUI = false;
             for (auto* data : actionDataSet) {
+                // -- DIAG crash-site guard (logs before crash, crash still happens) --
+                if (!data) {
+                    Log.e("UILayer", "DIAG CRASH: data is NULL! touch={:x}, setIdSize={}",
+                        reinterpret_cast<uintptr_t>(touch), actionDataSet.size());
+                } else if (!data->collblock) {
+                    Log.e("UILayer", "DIAG CRASH: collblock is NULL! data={:x}, taken={}, calledEnter={}, calledExit={}",
+                        reinterpret_cast<uintptr_t>(data), data->taken, data->calledEnter, data->calledExit);
+                    if (clickVec) {
+                        ptrdiff_t idx = data - clickVec->data();
+                        Log.e("UILayer", "DIAG CRASH: clickActions size={}, cap={}, data={:x}, computed_idx={}, dataAtInsert={:x}",
+                            clickVec->size(), clickVec->capacity(),
+                            reinterpret_cast<uintptr_t>(clickVec->data()), idx,
+                            m_fields->clickActionsDataAtInsert);
+                    }
+                }
+                // original code — unchanged, will crash as before
                 if (!data->collblock->m_isUIObject) { hasNonUI = true; break; }
             }
-            if (hasNonUI) touchMoved(touch);
+            if (hasNonUI) {
+                Log.i("UILayer", "DIAG: calling touchMoved from camMove loop, touch={:x}",
+                    reinterpret_cast<uintptr_t>(touch));
+                touchMoved(touch);
+            }
         }
+        m_fields->processingCameraMove = false;
     }
 
 #pragma region touch hooks
@@ -133,7 +170,10 @@ class $modify(MyLayer, UILayer) {
 
                 actionData.taken = true;
                 m_fields->claimedTouches[touch].insert(&actionData);
-                // Log.i("UILayer", "scheduling");
+                m_fields->clickActionsDataAtInsert = reinterpret_cast<uintptr_t>(gf->clickActions.data());
+                Log.i("UILayer", "DIAG: ccTouchBegan inserted touch={:x}, map_now={}, vecData={:x}",
+                    reinterpret_cast<uintptr_t>(touch), m_fields->claimedTouches.size(),
+                    m_fields->clickActionsDataAtInsert);
                 schedule(schedule_selector(MyLayer::updateNonUILayerTouches));
             }
         }
@@ -143,6 +183,12 @@ class $modify(MyLayer, UILayer) {
 
     // this is NOT the hook.
     void touchMoved(CCTouch* touch) {
+        // -- DIAG re-entrancy detection --
+        if (m_fields->processingCameraMove) {
+            Log.w("UILayer", "DIAG REENTRY: touchMoved called DURING camera move iteration! touch={:x}, map_size={}",
+                reinterpret_cast<uintptr_t>(touch), m_fields->claimedTouches.size());
+        }
+
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
         auto gf = layer->m_fields.self();
 
@@ -183,6 +229,10 @@ class $modify(MyLayer, UILayer) {
                 layer->spawnGroup(data.action.groupIdCursorEnter);
                 data.taken = true;
                 claimedTouches[touch].insert(&data);
+                m_fields->clickActionsDataAtInsert = reinterpret_cast<uintptr_t>(gf->clickActions.data());
+                Log.i("UILayer", "DIAG: touchMoved(unclaimed) inserted touch={:x}, map_now={}, vecData={:x}",
+                    reinterpret_cast<uintptr_t>(touch), claimedTouches.size(),
+                    m_fields->clickActionsDataAtInsert);
             }
             return;
         }
@@ -219,6 +269,10 @@ class $modify(MyLayer, UILayer) {
             candidate.calledExit = false;
 
             actionDataSet.insert(&candidate);
+            m_fields->clickActionsDataAtInsert = reinterpret_cast<uintptr_t>(gf->clickActions.data());
+            Log.i("UILayer", "DIAG: touchMoved(steal) inserted into touch={:x}, set_now={}, vecData={:x}",
+                reinterpret_cast<uintptr_t>(touch), actionDataSet.size(),
+                m_fields->clickActionsDataAtInsert);
         }
     }
     void ccTouchMoved(CCTouch* touch, CCEvent* event) {
@@ -265,6 +319,9 @@ class $modify(MyLayer, UILayer) {
             }
 
             claimedTouches.erase(it);
+            Log.i("UILayer", "DIAG: ccTouchEnded erased touch={:x}, map_now={}, dataAtInsert={:x}",
+                reinterpret_cast<uintptr_t>(touch), claimedTouches.size(),
+                m_fields->clickActionsDataAtInsert);
             if (claimedTouches.empty()) {
                 unschedule(schedule_selector(MyLayer::updateNonUILayerTouches));
             }
