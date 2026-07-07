@@ -410,10 +410,10 @@ bool InputTriggerPopup::init(TextGameObject* object) {
             {B_ROW_LEFT_X, buttonTabContainer->getContentHeight() - B_Y_START});
 
     auto bRow2Left = createIntegerInput(
-            "Down Group:", &bd.groupIdCursorDown,
+            "Press Group:", &bd.groupIdCursorDown,
             {B_ROW_LEFT_X, buttonTabContainer->getContentHeight() - B_Y_START - B_Y_DIFFERENCE});
     auto bRow2Right = createIntegerInput(
-            "Up Group:", &bd.groupIdCursorUp,
+            "Release Group:", &bd.groupIdCursorUp,
             {B_ROW_RIGHT_X, buttonTabContainer->getContentHeight() - B_Y_START - B_Y_DIFFERENCE});
 
     auto bRow3Left = createIntegerInput(
@@ -460,17 +460,35 @@ bool InputTriggerPopup::init(TextGameObject* object) {
                 Log.i("popup", "allow steal from toggle");
             });
     allowStealFromToggle->toggle(bd.allowStealFrom);
-    allowStealFromToggle->setPosition({m_mainLayer->getContentWidth() * 0.75f - 10.f, 30.f});
+    allowStealFromToggle->setPosition({m_mainLayer->getContentWidth() * 0.25f - 40.f, 0.f});
     allowStealFromToggle->setID("allow-steal-from-toggle");
 
     auto allowStealFromLabel = CCLabelBMFont::create("Allow Claiming\nFrom Others", "bigFont.fnt");
     allowStealFromLabel->setScale(0.35f);
     allowStealFromLabel->setAnchorPoint({0.f, 0.5f});
-    allowStealFromLabel->setPosition({m_mainLayer->getContentWidth() * 0.75f + 20.f, 30.f});
+    allowStealFromLabel->setPosition({m_mainLayer->getContentWidth() * 0.25f - 10.f, 0.f});
     allowStealFromLabel->setID("allow-steal-from-label");
 
     bBoolsMenu->addChild(allowStealFromToggle);
     bBoolsMenu->addChild(allowStealFromLabel);
+
+    auto ignoreInputToggle =
+            CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&, this](CCMenuItemToggler* toggler) {
+                getButtonData().m_clickAction.ignoreInput = !toggler->isToggled();
+                Log.i("popup", "ignore input toggle");
+            });
+    ignoreInputToggle->toggle(bd.ignoreInput);
+    ignoreInputToggle->setPosition({m_mainLayer->getContentWidth() * 0.75f - 10.f, 30.f});
+    ignoreInputToggle->setID("ignore-input-toggle");
+
+    auto ignoreInputLabel = CCLabelBMFont::create("Ignore Input", "bigFont.fnt");
+    ignoreInputLabel->setScale(0.35f);
+    ignoreInputLabel->setAnchorPoint({0.f, 0.5f});
+    ignoreInputLabel->setPosition({m_mainLayer->getContentWidth() * 0.75f + 20.f, 30.f});
+    ignoreInputLabel->setID("ignore-input-label");
+
+    bBoolsMenu->addChild(ignoreInputToggle);
+    bBoolsMenu->addChild(ignoreInputLabel);
 
     buttonTabContainer->addChild(bBoolsMenu);
 
@@ -501,10 +519,10 @@ bool InputTriggerPopup::init(TextGameObject* object) {
             {LEFT_X, touchTabContainer->getContentHeight() - Y_START - Y_DIFFERENCE});
 
     auto downGroupInput = createIntegerInput(
-            "Down Group:", &td.groupIdTouchDown,
+            "Press Group:", &td.groupIdTouchDown,
             {RIGHT_LEFT_X, touchTabContainer->getContentHeight() - Y_START});
     auto upGroupInput = createIntegerInput(
-            "Up Group:", &td.groupIdTouchUp,
+            "Release Group:", &td.groupIdTouchUp,
             {RIGHT_RIGHT_X, touchTabContainer->getContentHeight() - Y_START});
 
     auto itemXInput = createIntegerInput(

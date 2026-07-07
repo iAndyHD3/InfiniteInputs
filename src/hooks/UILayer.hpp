@@ -9,6 +9,12 @@ using namespace geode::prelude;
 
 class $modify(MyLayer, UILayer) {
 
+    static void onModify(auto& self) {
+        if (!self.setHookPriorityPre("UILayer::ccTouchBegan", Priority::First)) {
+            geode::log::warn("Failed to set hook priority for UILayer::ccTouchBegan");
+        }
+    }
+
     struct Fields {
         // Maps a Touch ID to the ClickActionData currently handling that touch.
 
@@ -130,8 +136,6 @@ class $modify(MyLayer, UILayer) {
 #pragma region touch hooks
 
     bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
-        if (!UILayer::ccTouchBegan(touch, event))
-            return false;
 
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
         auto gf = layer->m_fields.self();
@@ -139,7 +143,41 @@ class $modify(MyLayer, UILayer) {
         if (!gf->active) {
             return true;
         }
+
+        // Check for ignored inputs first, before any other hooks run
+        for (ClickActionData& actionData : gf->clickActions) {
+            if (actionData.taken)
+                continue;
+            if (isTouchInsideBlock(touch, actionData.collblock) && actionData.action.ignoreInput) {
+                Log.i("UILayer", "Touch began inside click action with ignoreInput=true, spawning down group and blocking touch");
+                layer->spawnGroup(actionData.action.groupIdCursorDown);
+                return false;
+            }
+        }
+
+        // Call original (triggers other hooks in priority chain)
+        if (!UILayer::ccTouchBegan(touch, event))
+            return false;
+
         Log.i("UILayer", "Touch began with id: {}", touch->getID());
+
+        // button actions
+        for (ClickActionData& actionData : gf->clickActions) {
+            if (actionData.taken)
+                continue;
+
+            if (isTouchInsideBlock(touch, actionData.collblock)) {
+                layer->spawnGroup(actionData.action.groupIdCursorDown);
+
+                actionData.taken = true;
+                m_fields->claimedTouches[touch].insert(&actionData);
+                m_fields->clickActionsDataAtInsert = reinterpret_cast<uintptr_t>(gf->clickActions.data());
+                Log.i("UILayer", "DIAG: ccTouchBegan inserted touch={:x}, map_now={}, vecData={:x}",
+                    reinterpret_cast<uintptr_t>(touch), m_fields->claimedTouches.size(),
+                    m_fields->clickActionsDataAtInsert);
+                schedule(schedule_selector(MyLayer::updateNonUILayerTouches));
+            }
+        }
 
         auto [first, last] = gf->touchActions.equal_range(touch->getID());
         for (auto it = first; it != last; ++it) {
@@ -157,24 +195,6 @@ class $modify(MyLayer, UILayer) {
         if (it != gf->touchFollowObjects.end()) {
             for (GameObject* obj : it->second) {
                 layer->moveObjectCorrectly(obj, touch->getLocation());
-            }
-        }
-
-        // button actions
-        for (ClickActionData& actionData : gf->clickActions) {
-            if (actionData.taken)
-                continue;
-
-            if (isTouchInsideBlock(touch, actionData.collblock)) {
-                layer->spawnGroup(actionData.action.groupIdCursorDown);
-
-                actionData.taken = true;
-                m_fields->claimedTouches[touch].insert(&actionData);
-                m_fields->clickActionsDataAtInsert = reinterpret_cast<uintptr_t>(gf->clickActions.data());
-                Log.i("UILayer", "DIAG: ccTouchBegan inserted touch={:x}, map_now={}, vecData={:x}",
-                    reinterpret_cast<uintptr_t>(touch), m_fields->claimedTouches.size(),
-                    m_fields->clickActionsDataAtInsert);
-                schedule(schedule_selector(MyLayer::updateNonUILayerTouches));
             }
         }
 
