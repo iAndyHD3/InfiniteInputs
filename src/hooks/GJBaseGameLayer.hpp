@@ -16,6 +16,7 @@
 #include "../LevelKeys.hpp"
 #include "../TextParsing.hpp"
 
+struct MyUIWrapper;
 
 using namespace geode::prelude;
 
@@ -89,6 +90,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         CCPoint lastMousePos;
         bool shouldStopUpdatingMousePos = false;
+        MyUIWrapper* uiWrapper = nullptr;
 
 
         void addKeyBind(LevelKeys key, bool down, int groupId);
@@ -103,51 +105,28 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         bool hasAnyMouseKeyActive();
     };
 
+    $override
+    bool init();
 
-    $override bool init();
+    $override
+    void resetLevelVariables();
 
-    //$override void update(float);
-
-
-    // void sortSectionVector();
     void delayedInit(float);
-
     static std::vector<std::string_view> getAllTextsFromLabels(GJBaseGameLayer* pl);
 
     void editorActiveHandlerLoop(float);
-
-    // void handleClick(alpha::dispatcher::TouchEvent* touch, bool down);
-
     void updateLoop(float);
-
     void updateMouseDeltaKeys(float);
-
     void spawnModLoadedGroups(float);
-
-
-    void resetLevelVariables();
-
-    // void setupLevelStart(LevelSettingsObject* p0);
-
     void setupText(std::string_view t);
-
     void setupCursorGroup();
-
-    // true if correctly registered (TODO: or will register) atleast one keybind
     bool setupTextLabelKeys_step1();
-
     bool isModActive();
-
     void setupKeybinds_step0(float);
-
     void handleScroll(float x, float y);
-
     void nh_handleKeypress(LevelKeys key, bool down);
-
     cocos2d::CCPoint screenToGame(const cocos2d::CCPoint& screenPos);
-
     void spawnGroup(groupId id);
-
     void updateItemId(int itemId, int newValue);
     void moveObjectCorrectly(GameObject* obj, CCPoint to);
 };

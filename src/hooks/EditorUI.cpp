@@ -5,15 +5,28 @@
 #include <Geode/binding/EditorUI.hpp>
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/TextGameObject.hpp>
+#include "GJBaseGameLayer.hpp"
 #include "Geode/loader/Mod.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "InputTriggerPopup.hpp"
 #include "TextGameObject.hpp"
-
+#include "MyUIWrapper.hpp"
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
 
 using namespace geode::prelude;
+
+
+bool MyEditorUI::init(LevelEditorLayer* editorLayer) {
+    if (!EditorUI::init(editorLayer)) {
+        return false;
+    }
+
+    auto uiWrapper = MyUIWrapper::create((MyBaseLayer*)m_editorLayer, this);
+    addChild(uiWrapper);
+    return true;
+}
+
 
 void MyEditorUI::setupCreateMenu() {
     EditorUI::setupCreateMenu();

@@ -1,7 +1,9 @@
 #include "GJBaseGameLayer.hpp"
-#include "UILayer.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/binding/LevelEditorLayer.hpp>
+#include <Geode/binding/UILayer.hpp>
+#include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/PlatformToolbox.hpp>
 #include <Geode/binding/PlayLayer.hpp>
@@ -9,6 +11,7 @@
 #include <Geode/cocos/CCDirector.h>
 #include <arc/prelude.hpp>
 #include <arc/runtime/Runtime.hpp>
+#include <climits>
 #include <enchantum/enchantum.hpp>
 #include <numbers>
 #include <scn/scan.h>
@@ -20,6 +23,8 @@
 #include "TextParsing.hpp"
 
 #define ETOSTRING(k) enchantum::to_string(k)
+
+
 
 static gd::vector<short> getGroupIDs(GameObject* obj) {
     gd::vector<short> res;
@@ -79,7 +84,9 @@ bool MyBaseLayer::Fields::hasAnyMouseKeyActive() {
            simpleKeyMap.contains(LevelKeys::y);
 }
 
-$override bool MyBaseLayer::init() {
+
+$override
+bool MyBaseLayer::init() {
     if (!GJBaseGameLayer::init())
         return false;
 
@@ -87,10 +94,9 @@ $override bool MyBaseLayer::init() {
     return true;
 }
 
-// $override void MyBaseLayer::update(float dt) {
-//     // LOGI(fields->shouldRunUpdateLoop);
-//     GJBaseGameLayer::update(dt);
-// }
+
+#include "MyUIWrapper.hpp"
+
 
 
 void MyBaseLayer::delayedInit(float) {
@@ -100,6 +106,7 @@ void MyBaseLayer::delayedInit(float) {
         setupKeybinds_step0(0);
         return;
     }
+
 
     for (auto obj : CCArrayExt<GameObject*>(m_objects)) {
         if (obj->m_objectID != 914)
@@ -143,6 +150,7 @@ void MyBaseLayer::delayedInit(float) {
 }
 
 
+
 void MyBaseLayer::editorActiveHandlerLoop(float) {
 
     auto fields = m_fields.self();
@@ -153,16 +161,33 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
 
     // start playtest
     if (!fields->active && inPlaytest) {
+
+        struct Test : CCLayer {
+            virtual bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
+                log::info("Test: ccTouchBegan called with touch id: {}", touch->getID());
+                return true;
+            }
+            virtual void ccTouchMoved(CCTouch* touch, CCEvent* event) override {
+                log::info("Test: ccTouchMoved called with touch id: {}", touch->getID());
+            }
+            virtual void ccTouchEnded(CCTouch* touch, CCEvent* event) override {
+                log::info("Test: ccTouchEnded called with touch id: {}", touch->getID());
+            }
+        };
+
         fields->active = true;
         setupKeybinds_step0(0);
+
+
     }
     // stop playtest
     else if (fields->active && !inPlaytest) {
-        // Clear claimed touches in UILayer to prevent dangling ClickActionData pointers
-        if (auto* uiLayer = static_cast<MyLayer*>(m_uiLayer)) {
-            uiLayer->m_fields->claimedTouches.clear();
-            uiLayer->unschedule(schedule_selector(MyLayer::updateNonUILayerTouches));
-        }
+        // Clear claimed touches in wrapper to prevent dangling ClickActionData pointers
+        // if (fields->uiWrapper) {
+        //     fields->uiWrapper->claimedTouches.clear();
+        //     fields->uiWrapper->ignoredTouches.clear();
+        //     fields->uiWrapper->unschedule(schedule_selector(MyUIWrapper::updateNonUILayerTouches));
+        // }
 
         *fields = MyBaseLayer::Fields();
     }
@@ -435,9 +460,22 @@ void MyBaseLayer::updateItemId(int itemId, int newValue) {
     updateCounters(itemId, newValue);
 }
 
+
+
 class $modify(PlayLayer) {
     void resetLevel() {
         PlayLayer::resetLevel();
         scheduleOnce(schedule_selector(MyBaseLayer::spawnModLoadedGroups), 0);
+    }
+
+
+
+    static CCScene* scene(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
+        CCScene* ret = PlayLayer::scene(level, useReplay, dontCreateObjects);
+        auto gameLayer = static_cast<MyBaseLayer*>(ret->getChildByIndex(0));
+        auto uiwrapper = MyUIWrapper::create(gameLayer, nullptr);
+        gameLayer->m_fields->uiWrapper = uiwrapper;
+        ret->addChild(uiwrapper);
+        return ret;
     }
 };
