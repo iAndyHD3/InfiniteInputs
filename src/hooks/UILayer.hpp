@@ -137,11 +137,12 @@ class $modify(MyLayer, UILayer) {
 
     bool ccTouchBegan(CCTouch* touch, CCEvent* event) {
 
+
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
         auto gf = layer->m_fields.self();
 
         if (!gf->active) {
-            return true;
+            return UILayer::ccTouchBegan(touch, event);
         }
 
         // Check for ignored inputs first, before any other hooks run
