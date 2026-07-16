@@ -11,6 +11,7 @@
 #include "InputTriggerPopup.hpp"
 #include "TextGameObject.hpp"
 #include "MyUIWrapper.hpp"
+#include "UILayer.hpp"
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
 
@@ -24,6 +25,8 @@ bool MyEditorUI::init(LevelEditorLayer* editorLayer) {
 
     auto uiWrapper = MyUIWrapper::create((MyBaseLayer*)m_editorLayer, this);
     addChild(uiWrapper);
+
+    ((MyUILayer*)(m_editorLayer->m_uiLayer))->m_fields->allow = true;
     return true;
 }
 

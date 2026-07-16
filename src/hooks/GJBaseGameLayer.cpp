@@ -218,6 +218,9 @@ CCPoint MyBaseLayer::moveObjectCorrectlyGetDelta(GameObject* obj, CCPoint to) {
     return delta;
 }
 
+void MyBaseLayer::moveObjectByDelta(GameObject* obj, CCPoint delta) {
+    moveObject(obj, delta.x, delta.y, false);
+}
 
 void MyBaseLayer::updateLoop(float) {
 
@@ -264,6 +267,13 @@ void MyBaseLayer::resetLevelVariables() {
     for (const auto& o : m_fields->cursorFollowObjects) {
         if(o) {
             o->setLastPosition(o->getPosition());
+        }
+    }
+    for (const auto& [touchId, touchVec] : m_fields->touchFollowObjects) {
+        for (const auto& o : touchVec) {
+            if(o) {
+                o->setLastPosition(o->getPosition());
+            }
         }
     }
     Log.i("gjbl", "Reset level variables, reset cursor follow objects' last position");
@@ -353,16 +363,6 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
             }
         }
 
-        //touch actions
-        for(const auto& touchIdAndGroupIds : touchIdToFollowGroupIds) {
-            int touchId = touchIdAndGroupIds.first;
-            const auto& groupIds = touchIdAndGroupIds.second;
-            for(const auto& groupId : groupIds) {
-                if(hasGroup(obj, groupId)) {
-                    f->touchFollowObjects[touchId].insert(obj);
-                }
-            }
-        }
     }
 
     //sort first by cursorfollowgroup, then by m_hasGroupParentsString (true first)
@@ -382,6 +382,34 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
         }
         lastGroup = tempObj.cursorfollowgroup;
         f->cursorFollowObjects.push_back(tempObj.obj);
+    }
+
+    // Build touch follow object vectors with group-parent ordering
+    f->touchFollowObjects.clear();
+    for (const auto& [touchId, groupIds] : touchIdToFollowGroupIds) {
+        std::vector<TempOrderObj> tempTouchObjects;
+        for (const auto& obj : m_objects->asExt<GameObject*>()) {
+            for (const auto& groupId : groupIds) {
+                if (hasGroup(obj, groupId)) {
+                    tempTouchObjects.push_back({obj, groupId});
+                }
+            }
+        }
+        std::sort(tempTouchObjects.begin(), tempTouchObjects.end(), [](const TempOrderObj& a, const TempOrderObj& b) {
+            if (a.cursorfollowgroup != b.cursorfollowgroup) {
+                return a.cursorfollowgroup < b.cursorfollowgroup;
+            }
+            return a.obj->m_hasGroupParentsString > b.obj->m_hasGroupParentsString;
+        });
+        std::vector<GameObject*>& touchVec = f->touchFollowObjects[touchId];
+        int lastGroup = -1;
+        for (const auto& tempObj : tempTouchObjects) {
+            if (lastGroup != -1 && tempObj.cursorfollowgroup != lastGroup) {
+                touchVec.push_back(nullptr);
+            }
+            lastGroup = tempObj.cursorfollowgroup;
+            touchVec.push_back(tempObj.obj);
+        }
     }
 
     for(const auto& obj : f->cursorFollowObjects) {
@@ -540,12 +568,11 @@ class $modify(PlayLayer) {
 
 
 
-    static CCScene* scene(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
-        CCScene* ret = PlayLayer::scene(level, useReplay, dontCreateObjects);
-        auto gameLayer = static_cast<MyBaseLayer*>(ret->getChildByIndex(0));
-        auto uiwrapper = MyUIWrapper::create(gameLayer, nullptr);
-        gameLayer->m_fields->uiWrapper = uiwrapper;
-        ret->addChild(uiwrapper);
-        return ret;
+    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
+        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
+        auto uiwrapper = MyUIWrapper::create((MyBaseLayer*)this, nullptr);
+        ((MyBaseLayer*)this)->m_fields->uiWrapper = uiwrapper;
+        this->addChild(uiwrapper, 99);
+        return true;
     }
 };

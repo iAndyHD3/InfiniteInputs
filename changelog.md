@@ -8,6 +8,7 @@
 - renamed button "steal" checkboxes to "claim"
 - support multiple triggers with same group ids and item ids in all actions
 - fixed a bug that limited groups to 4 characters on mobile
+- make lock cursor respect 
 
 # 2.0.1
 

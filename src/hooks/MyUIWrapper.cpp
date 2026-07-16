@@ -3,7 +3,7 @@
 #include "GJBaseGameLayer.hpp"
 
 void MyUIWrapper::registerWithTouchDispatcher() {
-    CCDirector::get()->getTouchDispatcher()->addTargetedDelegate(this, INT_MAX, true);
+    CCDirector::get()->getTouchDispatcher()->addTargetedDelegate(this, INT_MAX, editorUI != nullptr);
 }
 
 bool MyUIWrapper::isPointInOBB(const CCPoint& point, const std::array<CCPoint, 4>& corners) {
@@ -118,8 +118,29 @@ void MyUIWrapper::touchMoved(CCTouch* touch) {
 
     auto itobjs = gf->touchFollowObjects.find(touch->getID());
     if (itobjs != gf->touchFollowObjects.end()) {
+        bool nextNew = true;
+        bool applyDelta = false;
+        CCPoint delta;
         for (GameObject* obj : itobjs->second) {
-            layer->moveObjectCorrectly(obj, touch->getLocation());
+            if (!obj) {
+                nextNew = true;
+                applyDelta = false;
+                continue;
+            }
+            if (applyDelta) {
+                layer->moveObjectByDelta(obj, delta);
+            } else if (nextNew) {
+                nextNew = false;
+                if (obj->m_hasGroupParentsString) {
+                    applyDelta = true;
+                    delta = layer->moveObjectCorrectlyGetDelta(obj, touch->getLocation());
+                } else {
+                    applyDelta = false;
+                    layer->moveObjectCorrectly(obj, touch->getLocation());
+                }
+            } else {
+                layer->moveObjectCorrectly(obj, touch->getLocation());
+            }
         }
     }
 
@@ -184,6 +205,7 @@ bool MyUIWrapper::ccTouchBegan(CCTouch* touch, CCEvent* event) {
     auto gf = layer->m_fields.self();
 
     if (!gf->active) {
+
         return originalBegan(touch, event);
     }
 
@@ -235,8 +257,29 @@ bool MyUIWrapper::ccTouchBegan(CCTouch* touch, CCEvent* event) {
 
     auto it = gf->touchFollowObjects.find(touch->getID());
     if (it != gf->touchFollowObjects.end()) {
+        bool nextNew = true;
+        bool applyDelta = false;
+        CCPoint delta;
         for (GameObject* obj : it->second) {
-            layer->moveObjectCorrectly(obj, touch->getLocation());
+            if (!obj) {
+                nextNew = true;
+                applyDelta = false;
+                continue;
+            }
+            if (applyDelta) {
+                layer->moveObjectByDelta(obj, delta);
+            } else if (nextNew) {
+                nextNew = false;
+                if (obj->m_hasGroupParentsString) {
+                    applyDelta = true;
+                    delta = layer->moveObjectCorrectlyGetDelta(obj, touch->getLocation());
+                } else {
+                    applyDelta = false;
+                    layer->moveObjectCorrectly(obj, touch->getLocation());
+                }
+            } else {
+                layer->moveObjectCorrectly(obj, touch->getLocation());
+            }
         }
     }
 
@@ -329,19 +372,24 @@ MyUIWrapper* MyUIWrapper::create(MyBaseLayer* gameLayer, EditorUI* editorUI) {
     return nullptr;
 }
 
+#include "UILayer.hpp";
 
 bool MyUIWrapper::originalBegan(CCTouch* touch, CCEvent* event) {
     if(editorUI) {
         return editorUI->ccTouchBegan(touch, event);
     }
-    return UILayer::get()->ccTouchBegan(touch, event);
+    auto ui = static_cast<MyUILayer*>(UILayer::get());
+    ui->m_fields->allow = true;
+    return ui->ccTouchBegan(touch, event);
 }
 
 void MyUIWrapper::originalMoved(CCTouch* touch, CCEvent* event) {
     if(editorUI) {
         editorUI->ccTouchMoved(touch, event);
     } else {
-        UILayer::get()->ccTouchMoved(touch, event);
+        auto ui = static_cast<MyUILayer*>(UILayer::get());
+        ui->m_fields->allow = true;
+        ui->ccTouchMoved(touch, event);
     }
 }
 
@@ -349,6 +397,8 @@ void MyUIWrapper::originalEnded(CCTouch* touch, CCEvent* event) {
     if(editorUI) {
         editorUI->ccTouchEnded(touch, event);
     } else {
-        UILayer::get()->ccTouchEnded(touch, event);
+        auto ui = static_cast<MyUILayer*>(UILayer::get());
+        ui->m_fields->allow = true;
+        ui->ccTouchEnded(touch, event);
     }
 }

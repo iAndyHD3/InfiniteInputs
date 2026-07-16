@@ -69,7 +69,7 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         std::vector<ClickActionData> clickActions;
 
         boost::unordered_multimap</*touchID=*/int, TouchAction> touchActions;
-        boost::unordered_flat_map</*touchID=*/int, boost::unordered_flat_set<GameObject*>> touchFollowObjects;
+        boost::unordered_flat_map</*touchID=*/int, std::vector<GameObject*>> touchFollowObjects;
 
         bool spawnedModLoaded = false;
         bool spawnedModLoadedPC = false;
@@ -130,4 +130,5 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     void updateItemId(int itemId, int newValue);
     void moveObjectCorrectly(GameObject* obj, CCPoint to);
     CCPoint moveObjectCorrectlyGetDelta(GameObject* obj, CCPoint to);
+    void moveObjectByDelta(GameObject* obj, CCPoint delta);
 };
