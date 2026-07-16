@@ -6,8 +6,10 @@
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
 #include "BetterGeodeLogs.hpp"
+#include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/ui/Layout.hpp"
 #include "Geode/ui/Popup.hpp"
 #include "Geode/ui/TextInput.hpp"
@@ -243,14 +245,38 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     row5Menu->addChild(createKeyboardToggler(LevelKeys::m));
     row5Menu->addChild(createKeyboardToggler(LevelKeys::leftShift, 80, "Shift"));
 
+    auto sep = CCNode::create();
+    sep->setContentSize({20,0});
+    row5Menu->addChild(sep);
+
+    row5Menu->addChild(createKeyboardToggler(LevelKeys::upArrow, 40, "", "edit_upBtn_001.png", false, false));
+
+    sep = CCNode::create();
+    sep->setContentSize({24, 0});
+    row5Menu->addChild(sep);
+    auto layout = (RowLayout*)row5Menu->getLayout();
+    layout->setAxisAlignment(AxisAlignment::End);
+    layout->setCrossAxisAlignment(AxisAlignment::End);
+
+
     row5Menu->updateLayout();
     keyboardContainer->addChild(row5Menu);
 
     auto row6Menu = createKeyboardMenu(2.f, 200, 6);
+    layout = (RowLayout*)row6Menu->getLayout();
+    layout->setAxisAlignment(AxisAlignment::End);
+    layout->setCrossAxisAlignment(AxisAlignment::End);
 
     row6Menu->addChild(createKeyboardToggler(LevelKeys::leftCtrl, 50, "Ctrl"));
     row6Menu->addChild(createKeyboardToggler(LevelKeys::leftAlt, 50, "Alt"));
     row6Menu->addChild(createKeyboardToggler(LevelKeys::space, 240, "Space"));
+    sep = CCNode::create();
+    sep->setContentSize({20,0});
+    row6Menu->addChild(sep);
+
+    row6Menu->addChild(createKeyboardToggler(LevelKeys::leftArrow, 40, "", "edit_leftBtn_001.png", false, false));
+    row6Menu->addChild(createKeyboardToggler(LevelKeys::downArrow, 40, "", "edit_downBtn_001.png", false, false));
+    row6Menu->addChild(createKeyboardToggler(LevelKeys::rightArrow, 40, "", "edit_rightBtn_001.png", false, false));
 
     row6Menu->updateLayout();
     keyboardContainer->addChild(row6Menu);
@@ -674,7 +700,7 @@ CCMenuItemToggler* InputTriggerPopup::createTabToggler(const char* label, Tab ta
 }
 
 CCMenuItemToggler*
-InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::string& labelOverride) {
+InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::string& labelOverride, const char* spr, bool flipX, bool flipY) {
     auto onSpr = CCScale9Sprite::create("GJ_button_02.png");
     onSpr->setContentSize({width, 40});
     auto offSpr = CCScale9Sprite::create("GJ_button_04.png");
@@ -682,19 +708,42 @@ InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::
 
     std::string keyStr = labelOverride.empty() ? std::string(fixKeyName(enchantum::to_string(key))) : std::move(labelOverride);
 
-    auto keyLabelOn = CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
-    keyLabelOn->setScale(0.5f);
-    keyLabelOn->setPosition(onSpr->getContentSize() * 0.5f);
+    CCSprite* alternativeSpr = spr ? CCSprite::createWithSpriteFrameName(spr) : nullptr;
+    if (alternativeSpr) {
+        if (flipX) {
+            alternativeSpr->setFlipX(true);
+        }
+        if (flipY) {
+            alternativeSpr->setFlipY(true);
+        }
+    }
+
+    CCNode* spriteOnTop = alternativeSpr ? alternativeSpr : (CCNode*)CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
+    if(!alternativeSpr) spriteOnTop->setScale(0.5f);
+    spriteOnTop->setPosition(onSpr->getContentSize() * 0.5f);
 
     onSpr->setScale(0.6f);
-    onSpr->addChild(keyLabelOn);
+    onSpr->addChild(spriteOnTop);
 
-    auto keyLabelOff = CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
-    keyLabelOff->setScale(0.5f);
-    keyLabelOff->setPosition(offSpr->getContentSize() * 0.5f);
+
+    CCSprite* alternativeSpr2 = spr ? CCSprite::createWithSpriteFrameName(spr) : nullptr;
+    if (alternativeSpr2) {
+        if (flipX) {
+            alternativeSpr2->setFlipX(true);
+        }
+        if (flipY) {
+            alternativeSpr2->setFlipY(true);
+        }
+    }
+
+
+    auto spriteOnTop2 = alternativeSpr2 ? alternativeSpr2 : (CCNode*)CCLabelBMFont::create(keyStr.c_str(), "bigFont.fnt");
+    
+    if(!alternativeSpr2) spriteOnTop2->setScale(0.5f);
+    spriteOnTop2->setPosition(offSpr->getContentSize() * 0.5f);
 
     offSpr->setScale(0.6f);
-    offSpr->addChild(keyLabelOff);
+    offSpr->addChild(spriteOnTop2);
 
     auto& kbData = getKeyboardData();
     auto toggler = CCMenuItemExt::createToggler(onSpr, offSpr, [&kbData, key](CCMenuItemToggler* self) {
@@ -714,6 +763,8 @@ InputTriggerPopup::createKeyboardToggler(LevelKeys key, float width, const std::
 
     return toggler;
 }
+
+
 
 CCMenu* InputTriggerPopup::createKeyboardMenu(float gap, float yOffset, int row) {
     CCMenu* menu = CCMenu::create();

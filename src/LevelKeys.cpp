@@ -129,6 +129,11 @@ LevelKeys CocosKeyCodeToLevelKey(enumKeyCodes code) {
         case KEY_B: return LevelKeys::b;
         case KEY_N: return LevelKeys::n;
         case KEY_M: return LevelKeys::m;
+        case KEY_Left: return LevelKeys::leftArrow;
+        case KEY_Right: return LevelKeys::rightArrow;
+        case KEY_Up: return LevelKeys::upArrow;
+        case KEY_Down: return LevelKeys::downArrow;
+        
         case KEY_Enter: return LevelKeys::enter;
 
         case KEY_Space: return LevelKeys::space;

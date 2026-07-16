@@ -32,7 +32,7 @@ protected:
 
     CCNode* createMouseToggler(const char* label, LevelKeys key, float buttonScale = 0.55f, float labelScale = 0.35f);
     CCMenuItemToggler* createTabToggler(const char* label, Tab tab);
-    CCMenuItemToggler* createKeyboardToggler(LevelKeys key, float width = 40, const std::string& labelOverride = "");
+    CCMenuItemToggler* createKeyboardToggler(LevelKeys key, float width = 40, const std::string& labelOverride = "", const char* spr = nullptr, bool flipX = false, bool fipY = false);
     CCMenu* createKeyboardMenu(float gap, float yOffset, int row);
     CCNode* createIntegerInput(const char* labelText, int* valuePtr, CCPoint position);
 
