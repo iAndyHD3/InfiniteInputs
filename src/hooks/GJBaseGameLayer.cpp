@@ -194,27 +194,61 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
 }
 
 void MyBaseLayer::moveObjectCorrectly(GameObject* o, CCPoint to) {
-        CCPoint layerObjPos;
-
-        if (o->m_isUIObject) {
-            layerObjPos = o->getRealPosition();
-        } else {
-            layerObjPos = this->convertToNodeSpace(o->getRealPosition());
-            to = screenToGame(to);
-        }
-
-        auto delta = to - layerObjPos;
-        moveObject(o, delta.x, delta.y, false);
+    CCPoint layerObjPos;
+    if (o->m_isUIObject) {
+        layerObjPos = o->getRealPosition();
+    } else {
+        layerObjPos = this->convertToNodeSpace(o->getRealPosition());
+        to = screenToGame(to);
+    }
+    auto delta = to - layerObjPos;
+    moveObject(o, delta.x, delta.y, false);
 }
+
+CCPoint MyBaseLayer::moveObjectCorrectlyGetDelta(GameObject* obj, CCPoint to) {
+    CCPoint layerObjPos;
+    if (obj->m_isUIObject) {
+        layerObjPos = obj->getRealPosition();
+    } else {
+        layerObjPos = this->convertToNodeSpace(obj->getRealPosition());
+        to = screenToGame(to);
+    }
+    auto delta = to - layerObjPos;
+    moveObject(obj, delta.x, delta.y, false);
+    return delta;
+}
+
 
 void MyBaseLayer::updateLoop(float) {
 
 
     auto fields = m_fields.self();
-
+    auto mousePos = geode::cocos::getMousePos();
+    bool nextNew = true;
+    bool applyDelta = false;
+    CCPoint delta;
     for (const auto& o : fields->cursorFollowObjects) {
-        // LOGI(o->m_objectID, o->m_isUIObject, o->getRealPosition());
-        moveObjectCorrectly(o, geode::cocos::getMousePos());
+        if(!o) {
+            nextNew = true;
+            applyDelta = false;
+            continue;
+        }
+        if(applyDelta) {
+            moveObject(o, delta.x, delta.y, false);
+        }
+        else if(nextNew) {
+            nextNew = false;
+            if(o->m_hasGroupParentsString) {
+                applyDelta = true;
+                delta = moveObjectCorrectlyGetDelta(o, mousePos);
+            } else {
+                applyDelta = false;
+                moveObjectCorrectly(o, mousePos);
+            }
+        }
+        else {
+            moveObjectCorrectly(o, mousePos);
+        }
     }
 
     // if (!fields->spawnedModLoaded) {
@@ -228,7 +262,9 @@ void MyBaseLayer::resetLevelVariables() {
     GJBaseGameLayer::resetLevelVariables();
 
     for (const auto& o : m_fields->cursorFollowObjects) {
-        o->setLastPosition(o->getPosition());
+        if(o) {
+            o->setLastPosition(o->getPosition());
+        }
     }
     Log.i("gjbl", "Reset level variables, reset cursor follow objects' last position");
 }
@@ -293,6 +329,13 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     for(const auto& [touchId, action] : f->touchActions) {
         touchIdToFollowGroupIds[touchId].insert(action.groupIdLockObjectsToTouch);
     }
+    
+    struct TempOrderObj {
+        GameObject* obj;
+        int cursorfollowgroup;
+    };
+
+    std::vector<TempOrderObj> cursorFollowObjectsTemp;
 
     for (const auto& obj : m_objects->asExt<GameObject*>()) {
         if (obj->m_objectID == 1816) {
@@ -306,7 +349,7 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
         }
         for (auto cursorGroupId : f->cursorFollowGroupIds) {
             if (hasGroup(obj, cursorGroupId)) {
-                f->cursorFollowObjects.push_back(obj);
+                cursorFollowObjectsTemp.push_back({obj, cursorGroupId});    
             }
         }
 
@@ -320,6 +363,33 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
                 }
             }
         }
+    }
+
+    //sort first by cursorfollowgroup, then by m_hasGroupParentsString (true first)
+    std::sort(cursorFollowObjectsTemp.begin(), cursorFollowObjectsTemp.end(), [](const TempOrderObj& a, const TempOrderObj& b) {
+        if (a.cursorfollowgroup != b.cursorfollowgroup) {
+            return a.cursorfollowgroup < b.cursorfollowgroup;
+        }
+        return a.obj->m_hasGroupParentsString > b.obj->m_hasGroupParentsString;
+    });
+
+
+
+    int lastGroup = -1;
+    for(const auto& tempObj : cursorFollowObjectsTemp) {
+        if(lastGroup != -1 && tempObj.cursorfollowgroup != lastGroup) {
+            f->cursorFollowObjects.push_back(nullptr); // add a null object to separate groups
+        }
+        lastGroup = tempObj.cursorfollowgroup;
+        f->cursorFollowObjects.push_back(tempObj.obj);
+    }
+
+    for(const auto& obj : f->cursorFollowObjects) {
+        if(!obj) {
+            Log.i("gjbgl", "Cursor follow object: nullptr (group separator)");
+            continue;
+        }
+        Log.i("gjbgl", "Cursor follow object: {}, hasGroupParentsString: {}", obj, obj->m_hasGroupParentsString);
     }
 
     f->clickActionAddQueue.clear();

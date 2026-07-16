@@ -129,4 +129,5 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
     void spawnGroup(groupId id);
     void updateItemId(int itemId, int newValue);
     void moveObjectCorrectly(GameObject* obj, CCPoint to);
+    CCPoint moveObjectCorrectlyGetDelta(GameObject* obj, CCPoint to);
 };
