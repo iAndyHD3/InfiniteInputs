@@ -6,6 +6,7 @@
 #include <enchantum/enchantum.hpp>
 #include <fmt/format.h>
 #include "BetterGeodeLogs.hpp"
+#include "GlobalOverviewPopup.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"

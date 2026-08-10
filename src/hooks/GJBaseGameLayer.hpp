@@ -16,8 +16,6 @@
 #include "../LevelKeys.hpp"
 #include "../TextParsing.hpp"
 
-struct MyUIWrapper;
-
 using namespace geode::prelude;
 
 using groupId = int;
@@ -90,7 +88,6 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
 
         CCPoint lastMousePos;
         bool shouldStopUpdatingMousePos = false;
-        MyUIWrapper* uiWrapper = nullptr;
 
 
         void addKeyBind(LevelKeys key, bool down, int groupId);

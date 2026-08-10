@@ -10,25 +10,10 @@
 #include "Geode/utils/cocos.hpp"
 #include "InputTriggerPopup.hpp"
 #include "TextGameObject.hpp"
-#include "MyUIWrapper.hpp"
-#include "UILayer.hpp"
 
 constexpr int INPUT_TRIGGER_ID = 14999; // just below Object Groups limit
 
 using namespace geode::prelude;
-
-
-bool MyEditorUI::init(LevelEditorLayer* editorLayer) {
-    if (!EditorUI::init(editorLayer)) {
-        return false;
-    }
-
-    auto uiWrapper = MyUIWrapper::create((MyBaseLayer*)m_editorLayer, this);
-    addChild(uiWrapper);
-
-    ((MyUILayer*)(m_editorLayer->m_uiLayer))->m_fields->allow = true;
-    return true;
-}
 
 
 void MyEditorUI::setupCreateMenu() {

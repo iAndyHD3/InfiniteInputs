@@ -1,9 +1,7 @@
 #include "GJBaseGameLayer.hpp"
+#include "UILayer.hpp"
 #include <Geode/binding/EffectGameObject.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
-#include <Geode/binding/LevelEditorLayer.hpp>
-#include <Geode/binding/UILayer.hpp>
-#include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/binding/GameObject.hpp>
 #include <Geode/binding/PlatformToolbox.hpp>
 #include <Geode/binding/PlayLayer.hpp>
@@ -11,7 +9,6 @@
 #include <Geode/cocos/CCDirector.h>
 #include <arc/prelude.hpp>
 #include <arc/runtime/Runtime.hpp>
-#include <climits>
 #include <enchantum/enchantum.hpp>
 #include <numbers>
 #include <scn/scan.h>
@@ -95,10 +92,6 @@ bool MyBaseLayer::init() {
 }
 
 
-#include "MyUIWrapper.hpp"
-
-
-
 void MyBaseLayer::delayedInit(float) {
 
     if (!m_isEditor) {
@@ -162,19 +155,6 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     // start playtest
     if (!fields->active && inPlaytest) {
 
-        struct Test : CCLayer {
-            virtual bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
-                log::info("Test: ccTouchBegan called with touch id: {}", touch->getID());
-                return true;
-            }
-            virtual void ccTouchMoved(CCTouch* touch, CCEvent* event) override {
-                log::info("Test: ccTouchMoved called with touch id: {}", touch->getID());
-            }
-            virtual void ccTouchEnded(CCTouch* touch, CCEvent* event) override {
-                log::info("Test: ccTouchEnded called with touch id: {}", touch->getID());
-            }
-        };
-
         fields->active = true;
         setupKeybinds_step0(0);
 
@@ -182,12 +162,11 @@ void MyBaseLayer::editorActiveHandlerLoop(float) {
     }
     // stop playtest
     else if (fields->active && !inPlaytest) {
-        // Clear claimed touches in wrapper to prevent dangling ClickActionData pointers
-        // if (fields->uiWrapper) {
-        //     fields->uiWrapper->claimedTouches.clear();
-        //     fields->uiWrapper->ignoredTouches.clear();
-        //     fields->uiWrapper->unschedule(schedule_selector(MyUIWrapper::updateNonUILayerTouches));
-        // }
+        // Clear claimed touches in UILayer to prevent dangling ClickActionData pointers
+        if (auto* uiLayer = static_cast<MyLayer*>(m_uiLayer)) {
+            uiLayer->m_fields->claimedTouches.clear();
+            uiLayer->unschedule(schedule_selector(MyLayer::updateNonUILayerTouches));
+        }
 
         *fields = MyBaseLayer::Fields();
     }
@@ -325,6 +304,7 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
     }
 
     
+#if defined(GEODE_IS_DESKTOP)
     auto it = f->simpleKeyMap.find(LevelKeys::cursor);
     if (it != f->simpleKeyMap.end()) {
         f->cursorFollowGroupIds = it->second;
@@ -334,6 +314,7 @@ bool MyBaseLayer::setupTextLabelKeys_step1() {
             Log.i("gjbgl", "SETTING UP CURSOR GROUP {}", g);
         }
     }
+#endif
 
     boost::unordered_flat_map<int, boost::unordered_flat_set<int>> touchIdToFollowGroupIds;
     for(const auto& [touchId, action] : f->touchActions) {
@@ -564,15 +545,5 @@ class $modify(PlayLayer) {
     void resetLevel() {
         PlayLayer::resetLevel();
         scheduleOnce(schedule_selector(MyBaseLayer::spawnModLoadedGroups), 0);
-    }
-
-
-
-    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
-        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
-        auto uiwrapper = MyUIWrapper::create((MyBaseLayer*)this, nullptr);
-        ((MyBaseLayer*)this)->m_fields->uiWrapper = uiwrapper;
-        this->addChild(uiwrapper, 99);
-        return true;
     }
 };
