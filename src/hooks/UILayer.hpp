@@ -162,13 +162,13 @@ class $modify(MyLayer, UILayer) {
                     .m_step = 0,
                     .m_timestamp = 0
                 });
-                buttons.push_back(PlayerButtonCommand{
-                    .m_button = static_cast<PlayerButton>(1),
-                    .m_isPush = false,
-                    .m_isPlayer2 = false,
-                    .m_step = 0,
-                    .m_timestamp = 0
-                });
+                // buttons.push_back(PlayerButtonCommand{
+                //     .m_button = static_cast<PlayerButton>(1),
+                //     .m_isPush = false,
+                //     .m_isPlayer2 = false,
+                //     .m_step = 0,
+                //     .m_timestamp = 0
+                // });
                 layer->m_queuedButtons = buttons;
             }
 
@@ -417,6 +417,15 @@ class $modify(MyLayer, UILayer) {
                 // Trigger Up event if released inside the button
                 if (isTouchInsideBlock(touch, data->collblock)) {
                     layer->spawnGroup(data->action.groupIdCursorUp);
+                    if(data->action.jump) {
+                        layer->m_queuedButtons.push_back(PlayerButtonCommand{
+                    .m_button = static_cast<PlayerButton>(1),
+                    .m_isPush = false,
+                    .m_isPlayer2 = false,
+                    .m_step = 0,
+                    .m_timestamp = 0
+                    });
+                    }
                 }
             }
 
