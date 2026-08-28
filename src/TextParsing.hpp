@@ -22,6 +22,7 @@ struct ClickAction {
     bool stealTouches;
     bool allowStealFrom;
     bool ignoreInput;
+    bool jump;
 
     static std::optional<ClickAction> parse(std::string_view text);
     std::string getLabel();

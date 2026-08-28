@@ -513,8 +513,30 @@ bool InputTriggerPopup::init(TextGameObject* object) {
     ignoreInputLabel->setPosition({m_mainLayer->getContentWidth() * 0.75f + 20.f, 30.f});
     ignoreInputLabel->setID("ignore-input-label");
 
-    bBoolsMenu->addChild(ignoreInputToggle);
     bBoolsMenu->addChild(ignoreInputLabel);
+    bBoolsMenu->addChild(ignoreInputToggle);
+
+    auto jumpInputToggle =
+            CCMenuItemExt::createTogglerWithStandardSprites(0.7f, [&, this](CCMenuItemToggler* toggler) {
+                bool jumpNewState = !toggler->isToggled();
+                if(jumpNewState && getButtonData().m_clickAction.ignoreInput) {
+                    getButtonData().m_clickAction.ignoreInput = false;
+                }
+                getButtonData().m_clickAction.jump = jumpNewState;
+                Log.i("popup", "ignore input toggle");
+            });
+    jumpInputToggle->toggle(bd.jump);
+    jumpInputToggle->setPosition({m_mainLayer->getContentWidth() * 0.75f - 10.f, 0});
+    jumpInputToggle->setID("ignore-input-toggle");
+
+    auto jumpInputLabel = CCLabelBMFont::create("P1 Force jump", "bigFont.fnt");
+    jumpInputLabel->setScale(0.35f);
+    jumpInputLabel->setAnchorPoint({0.f, 0.5f});
+    jumpInputLabel->setPosition({m_mainLayer->getContentWidth() * 0.75f + 20.f, 0});
+    jumpInputLabel->setID("ignore-input-label");
+
+    bBoolsMenu->addChild(jumpInputToggle);
+    bBoolsMenu->addChild(jumpInputLabel);
 
     buttonTabContainer->addChild(bBoolsMenu);
 

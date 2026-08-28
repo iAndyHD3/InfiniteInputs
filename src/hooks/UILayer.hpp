@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Geode/binding/PlayerButtonCommand.hpp>
 #include <Geode/modify/UILayer.hpp>
 #include "BetterGeodeLogs.hpp"
 #include "GJBaseGameLayer.hpp"
@@ -149,7 +150,29 @@ class $modify(MyLayer, UILayer) {
         for (ClickActionData& actionData : gf->clickActions) {
             if (actionData.taken)
                 continue;
-            if (isTouchInsideBlock(touch, actionData.collblock) && actionData.action.ignoreInput) {
+
+            bool touchInside = isTouchInsideBlock(touch, actionData.collblock);
+            if(touchInside && actionData.action.jump) {
+                auto buttons = layer->m_queuedButtons;
+                UILayer::ccTouchBegan(touch, event);
+                buttons.push_back(PlayerButtonCommand{
+                    .m_button = static_cast<PlayerButton>(1),
+                    .m_isPush = true,
+                    .m_isPlayer2 = false,
+                    .m_step = 0,
+                    .m_timestamp = 0
+                });
+                buttons.push_back(PlayerButtonCommand{
+                    .m_button = static_cast<PlayerButton>(1),
+                    .m_isPush = false,
+                    .m_isPlayer2 = false,
+                    .m_step = 0,
+                    .m_timestamp = 0
+                });
+                layer->m_queuedButtons = buttons;
+            }
+
+            if (!actionData.action.jump && touchInside && actionData.action.ignoreInput) {
                 Log.i("UILayer", "Touch began inside click action with ignoreInput=true, spawning down group and blocking touch");
                 layer->spawnGroup(actionData.action.groupIdCursorDown);
                 m_fields->ignoredTouches.insert(touch);

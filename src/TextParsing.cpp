@@ -36,13 +36,28 @@ bool isOldFormatString(std::string_view t) {
 
 std::string ClickAction::getLabel() {
     return fmt::format(
-            "inf_inp:5 {} {} {} {} {} {} {} {}", collisionBlockId, groupIdCursorEnter, groupIdCursorExit,
+            "inf_inp:6 {} {} {} {} {} {} {} {} {}", collisionBlockId, groupIdCursorEnter, groupIdCursorExit,
             groupIdCursorDown, groupIdCursorUp, static_cast<uint8_t>(stealTouches),
-            static_cast<uint8_t>(allowStealFrom), static_cast<uint8_t>(ignoreInput));
+            static_cast<uint8_t>(allowStealFrom), static_cast<uint8_t>(ignoreInput), static_cast<uint8_t>(jump));
 }
 
 
 std::optional<ClickAction> ClickAction::parse(std::string_view t) {
+    if (auto result = scn::scan<int, int, int, int, int, int, int, int, int>(t, "inf_inp:6 {} {} {} {} {} {} {} {} {}")) {
+        auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
+               stealTouches, allowStealFrom, ignoreInput, jump] = result->values();
+        return ClickAction{
+                collisionBlockId,
+                groupIdCursorEnter,
+                groupIdCursorExit,
+                groupIdCursorDown,
+                groupIdCursorUp,
+                static_cast<bool>(stealTouches),
+                static_cast<bool>(allowStealFrom),
+                static_cast<bool>(ignoreInput),
+                static_cast<bool>(jump)};
+    }
+
     if (auto result = scn::scan<int, int, int, int, int, int, int, int>(t, "inf_inp:5 {} {} {} {} {} {} {} {}")) {
         auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
                stealTouches, allowStealFrom, ignoreInput] = result->values();
@@ -55,7 +70,8 @@ std::optional<ClickAction> ClickAction::parse(std::string_view t) {
                 groupIdCursorUp,
                 static_cast<bool>(stealTouches),
                 static_cast<bool>(allowStealFrom),
-                static_cast<bool>(ignoreInput)};
+                static_cast<bool>(ignoreInput),
+                false};
     }
     if (auto result = scn::scan<int, int, int, int, int, int, int>(t, "inf_inp:3 {} {} {} {} {} {} {}")) {
         auto& [collisionBlockId, groupIdCursorEnter, groupIdCursorExit, groupIdCursorDown, groupIdCursorUp,
@@ -69,6 +85,7 @@ std::optional<ClickAction> ClickAction::parse(std::string_view t) {
                 groupIdCursorUp,
                 static_cast<bool>(stealTouches),
                 static_cast<bool>(allowStealFrom),
+                false,
                 false};
     }
     Log.e("textparsing", "Could not parse click action: {}", t);
