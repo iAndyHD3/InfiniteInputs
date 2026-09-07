@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Geode/Enums.hpp>
 #include <Geode/binding/PlayerButtonCommand.hpp>
 #include <Geode/modify/UILayer.hpp>
 #include "BetterGeodeLogs.hpp"
@@ -29,7 +30,6 @@ class $modify(MyLayer, UILayer) {
         };
 
         boost::unordered_flat_map<CCTouch*, boost::unordered_flat_set<ClickActionData*>, TouchHasher, TouchEquality> claimedTouches;
-        boost::unordered_flat_set<CCTouch*, TouchHasher, TouchEquality> ignoredTouches;
         bool processingCameraMove = false;
         uintptr_t clickActionsDataAtInsert = 0;
     };
@@ -162,24 +162,26 @@ class $modify(MyLayer, UILayer) {
                     .m_step = 0,
                     .m_timestamp = 0
                 });
-                // buttons.push_back(PlayerButtonCommand{
-                //     .m_button = static_cast<PlayerButton>(1),
-                //     .m_isPush = false,
-                //     .m_isPlayer2 = false,
-                //     .m_step = 0,
-                //     .m_timestamp = 0
-                // });
                 layer->m_queuedButtons = buttons;
+                return true;
             }
 
             if (!actionData.action.jump && touchInside && actionData.action.ignoreInput) {
-                Log.i("UILayer", "Touch began inside click action with ignoreInput=true, spawning down group and blocking touch");
+                Log.i("UILayer", "Touch id {} began inside click action with ignoreInput=true, spawning down group and blocking touch", touch->getID());
                 layer->spawnGroup(actionData.action.groupIdCursorDown);
-                m_fields->ignoredTouches.insert(touch);
                 m_fields->claimedTouches[touch].insert(&actionData);
-                auto buttons = layer->m_queuedButtons;
+
                 UILayer::ccTouchBegan(touch, event);
+
+                gd::vector<PlayerButtonCommand> buttons;
+                for(const auto& b : layer->m_queuedButtons) {
+                    if(b.m_button != PlayerButton::Jump) {
+                        buttons.emplace_back(b);
+                    }
+                }
                 layer->m_queuedButtons = buttons;
+
+                this->m_p1TouchId = -1;
                 return true;
             }
         }
@@ -375,9 +377,6 @@ class $modify(MyLayer, UILayer) {
             return;
         }
 
-        if (m_fields->ignoredTouches.find(touch) == m_fields->ignoredTouches.end()) {
-            UILayer::ccTouchMoved(touch, event);
-        }
 
         touchMoved(touch);
     }
@@ -386,12 +385,9 @@ class $modify(MyLayer, UILayer) {
         auto layer = static_cast<MyBaseLayer*>(m_gameLayer);
         auto gf = layer->m_fields.self();
 
-        if (m_fields->ignoredTouches.find(touch) == m_fields->ignoredTouches.end()) {
             UILayer::ccTouchEnded(touch, event);
-        }
 
         if (!gf->active) {
-            m_fields->ignoredTouches.erase(touch);
             return;
         }
 
@@ -438,7 +434,6 @@ class $modify(MyLayer, UILayer) {
             }
         }
 
-        m_fields->ignoredTouches.erase(touch);
     }
 
 #pragma endregion
