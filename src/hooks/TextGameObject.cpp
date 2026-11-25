@@ -75,7 +75,7 @@ void MyTextGameObject::setupInputTrigger() {
     }
 }
 
-void MyTextGameObject::customObjectSetup(gd::vector<gd::string>& p0, gd::vector<void*>& p1) {
+void MyTextGameObject::customObjectSetup(std::vector<std::string>& p0, std::vector<void*>& p1) {
     TextGameObject::customObjectSetup(p0, p1);
     if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return;
@@ -84,7 +84,7 @@ void MyTextGameObject::customObjectSetup(gd::vector<gd::string>& p0, gd::vector<
     setupInputTrigger();
 }
 
-void MyTextGameObject::updateTextObject(gd::string p0, bool p1) {
+void MyTextGameObject::updateTextObject(std::string p0, bool p1) {
     TextGameObject::updateTextObject(p0, p1);
     if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return;

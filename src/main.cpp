@@ -5,6 +5,28 @@
 #include "LevelKeys.hpp"
 #include "hooks/GJBaseGameLayer.hpp"
 
+#if defined(GEODE_IS_WINDOWS)
+
+#include <Geode/modify/CCEGLView.hpp>
+#include "Geode/cocos/platform/win32/CCEGLView.h"
+
+using namespace geode::prelude;
+class $modify(CCEGLView)
+{
+    void toggleLockCursor(bool isLocked) {
+        //this is way easier and simpler than manually toggling it everywhere.
+        //its actually called before playlayer is initialized, so at the start it gets called manually in gjbgl
+        auto mylayer = reinterpret_cast<MyBaseLayer*>(PlayLayer::get());
+        if(mylayer && mylayer->m_fields->hasAnyMouseKeyActive()) {
+            CCEGLView::toggleLockCursor(false);
+            return;
+        }
+        CCEGLView::toggleLockCursor(isLocked);
+    }
+};
+
+#endif
+
 void onKeyInput(LevelKeys key, bool down) {
     if (auto layer = reinterpret_cast<MyBaseLayer*>(GJBaseGameLayer::get()); layer && layer->isModActive()) {
         layer->nh_handleKeypress(key, down);

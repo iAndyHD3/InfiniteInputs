@@ -18,8 +18,8 @@
 
 #define ETOSTRING(k) enchantum::to_string(k)
 
-static gd::vector<short> getGroupIDs(GameObject* obj) {
-    gd::vector<short> res;
+static std::vector<short> getGroupIDs(GameObject* obj) {
+    std::vector<short> res;
 
     if (obj->m_groups && obj->m_groups->at(0))
         for (auto i = 0; i < obj->m_groupCount; i++)
@@ -65,6 +65,13 @@ void MyBaseLayer::Fields::spawnGroupSimple(LevelKeys key) {
         Log.e("gjbl", "Could not find group to spawn on key: {}, size: {}", ETOSTRING(key), simpleKeyMap.size());
     }
 }
+
+bool MyBaseLayer::Fields::hasAnyMouseKeyActive() {
+    return cursorFollowGroupId != -1 || simpleKeyMap.contains(LevelKeys::mouseX) ||
+           simpleKeyMap.contains(LevelKeys::mouseY) || simpleKeyMap.contains(LevelKeys::x) ||
+           simpleKeyMap.contains(LevelKeys::y);
+}
+
 
 $override bool MyBaseLayer::init() {
     if (!GJBaseGameLayer::init())
@@ -391,7 +398,7 @@ cocos2d::CCPoint MyBaseLayer::screenToGame(const cocos2d::CCPoint& screenPos) {
 
 void MyBaseLayer::spawnGroup(groupId id) {
     Log.i("gjbgl", "spawn group: {}", id);
-    GJBaseGameLayer::spawnGroup(id, false, 0, gd::vector<int>(), 0, 0);
+    GJBaseGameLayer::spawnGroup(id, false, 0, std::vector<int>(), 0, 0);
 }
 
 class $modify(PlayLayer) {

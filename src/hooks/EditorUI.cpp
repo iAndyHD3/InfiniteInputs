@@ -69,21 +69,19 @@ CreateMenuItem* MyEditorUI::getCreateBtn(int id, int bg) {
     return EditorUI::getCreateBtn(id, bg);
 }
 
-void MyEditorUI::onCreateObject(int objectID) {
+GameObject* MyEditorUI::onCreateObject(int objectID) {
     if (!Mod::get()->getSettingValue<bool>("trigger-ui")) {
         return EditorUI::onCreateObject(objectID);
     }
 
-    if (objectID != INPUT_TRIGGER_ID)
+    if (objectID != INPUT_TRIGGER_ID) {
         return EditorUI::onCreateObject(objectID);
+    }
     objectID = 914;
 
-    EditorUI::onCreateObject(objectID);
-
-    if (m_selectedObject) {
-        auto textObj = static_cast<TextGameObject*>(m_selectedObject);
-        textObj->updateTextObject("inf_inp:1 empty 1 = 0", false);
-    }
+    auto textObj = static_cast<TextGameObject*>(EditorUI::onCreateObject(objectID));
+    textObj->updateTextObject("inf_inp:1 empty 1 = 0", false);
+    return textObj;
 }
 
 void MyEditorUI::clickOnPosition(cocos2d::CCPoint position) {

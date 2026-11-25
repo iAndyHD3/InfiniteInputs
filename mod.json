@@ -1,11 +1,11 @@
 {
-	"geode": "5.7.1",
-	"gd": {
-		"win": "2.2081",
-		"android": "2.2081",
-		"ios": "2.2081",
-		"mac": "2.2081"
-	},
+  "geode": "6.0.0",
+  "gd": {
+      "win": "2.2091",
+      "android": "2.2091",
+      "mac": "2.2091",
+      "ios": "2.2091"
+  },
 	"id": "iandyhd3.infinite_inputs",
 	"name": "Infinite Inputs",
 	"version": "v2.0.1",

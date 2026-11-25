@@ -8,7 +8,7 @@ class $modify(MyEditorUI, EditorUI) {
         bool editingNormalTextObject = false;
     };
     void setupCreateMenu();
-    void onCreateObject(int objectID);
+    GameObject* onCreateObject(int objectID);
     void clickOnPosition(cocos2d::CCPoint position);
     void editObject(cocos2d::CCObject* sender);
     CreateMenuItem* getCreateBtn(int id, int bg);

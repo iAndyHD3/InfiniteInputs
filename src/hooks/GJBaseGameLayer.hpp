@@ -92,6 +92,9 @@ class $modify(MyBaseLayer, GJBaseGameLayer) {
         void spawnGroupKeys(const KeyActionMapKey&);
         void spawnGroupSimple(LevelKeys key);
         void updateItemIdWithSimpleKey(GJBaseGameLayer* layer, LevelKeys key, int itemId);
+
+        bool hasAnyMouseKeyActive();
+
     };
 
 
